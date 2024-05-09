@@ -1,0 +1,25 @@
+
+-- Back 
+
+    Framework : 
+
+        - classe FrontController extends Servlet 
+            . processRequest {print("Tonga Ato")}
+            . doGet() {processRequest}
+            . doPost() {processRequest}
+        - script : 
+            . deplacement de tous les fichiers java dans un dossier temporaire
+            . compilation et emplacement du fichier.class dans bin
+            . compression en .jar du dossier bin
+            . deployement dans le dossier test/lib du jar
+
+    Test :
+    
+        - script.bat :
+            . deployement du test dans xampp
+            . test avec npq lien 
+        - web.xml : 
+            . declaration du FrontController
+
+
+-- Front 
