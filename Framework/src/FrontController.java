@@ -1,9 +1,10 @@
 package contoller.main ;
 
-import util.Util;
+import util.*;
 import annotation.AnnotationController;
 import annotation.Get;
 import mapping.Mapping ;
+import response.ModelView;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -25,7 +26,7 @@ import jakarta.servlet.ServletException;
 
 public class FrontController extends HttpServlet {
 
-    Map<String, Mapping> hashMap ;
+    HashMap<String, Mapping> hashMap ;
 
     void initParameter() throws Exception{
 
@@ -95,7 +96,7 @@ public class FrontController extends HttpServlet {
     void processRequest(HttpServletRequest req, HttpServletResponse res)throws ServletException, IOException {
 
         PrintWriter out = res.getWriter();
-        String host = "http://localhost:8080/";
+        String host = this.getInitParameter("host") ;
         String link = req.getRequestURL().toString();
         // out.println("Init "+link);
 
@@ -109,15 +110,31 @@ public class FrontController extends HttpServlet {
 
         if(map!=null){
             try {
-                Class clazz = Class.forName(map.getClassName());
-                Method method = clazz.getMethod(map.getMethod());
-                String repMethod = (String)method.invoke(clazz.newInstance());
+                Object responseMethod = UtilController.invoke(map);
+                
+                if(responseMethod instanceof String){
+                    out.println("Réponse de la methode est "+responseMethod);
+
+                } else if(responseMethod instanceof ModelView){
+
+                    RequestDispatcher rd = req.getRequestDispatcher(((ModelView)responseMethod).getUrl());
+
+                    HashMap dataValues = ((ModelView)responseMethod).getData() ;
+                    dataValues.forEach((key, value) -> req.setAttribute((String)key,dataValues.get(key)));
+                    // for (String key : dataValues.values()) {
+                    //     req.setAttribute(key,dataValues.get(key));
+                    // }
+                    rd.forward(req, res);
+
+                } else{
+
+                    out.println("Type de retour non appropriée");
+                }
                 // out.println("Nom de la classe associée a cette methode est "+map.getClassName());
                 // out.println("Nom de la methode associée a cette methode est "+map.getMethod());
-                out.println("Réponse de la methode est "+repMethod);
             }
            catch(Exception err){
-                out.print( "Error "+err.getMessage());
+                out.println( "Error "+err.getMessage());
                 err.printStackTrace();
            }
 
