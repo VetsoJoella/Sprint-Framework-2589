@@ -32,9 +32,7 @@ public class FrontController extends HttpServlet {
         ServletContext context = getServletContext();
         String param = this.getInitParameter("contollerPath") ;
         String path = context.getRealPath(param); 
-        File file = new File(path);
-        String[] classes = Util.loadData(param,file,AnnotationController.class);
-
+        String[] classes = Util.loadData(param,path,AnnotationController.class);
         hashMap = new HashMap<>();
         
         for (String classe : classes){
@@ -47,14 +45,16 @@ public class FrontController extends HttpServlet {
                         Get annotation = method.getAnnotation(Get.class);
     
                         // Obtient la valeur de l'annotation
-                        String value = annotation.url();
-                        if(hashMap.containsKey(value)){
+                        String key = annotation.url();
+                        if(hashMap.containsKey(key)){
+                            Mapping m = hashMap.get(key);
+                            String erreur = "L'url "+key+" est dupliquée.\n Elle existe déja dans la classe "+m.getClassName()+" avec la methode "+m.getMethod(); 
                             hashMap.clear();
-                            throw new Exception("L'url "+value+" est dupliquée");
+                            throw new Exception(erreur);
                          
                         }
                         else{
-                            hashMap.put(value,new Mapping(classe,method.getName()));
+                            hashMap.put(key,new Mapping(classe,method.getName()));
                         }
                     }
                 }

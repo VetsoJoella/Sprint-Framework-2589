@@ -9,36 +9,33 @@ import java.util.Vector;
 public class Util {
 
     
-    public static String[] loadData(String param, File file, Class annotation){
-
-        // ServletContext context = getServletContext();
-        // String path = context.getRealPath(param); 
+    public static String[] loadData(String param, String path, Class annotation) throws Exception{
 
         Vector<String> liste = new Vector<>();
         Vector<String> filterList = new Vector<>();
-       
+        File file = new File(path);
+        
+        if (file.exists()==false) {
+            throw new Exception("Le dossier controllerPath n'existe pas ");
+        }
+        findClassFiles(file, param , liste);
+        for(String l:liste){
+            
+            String pack = l.replace(param+".","");
 
-        try {
-            findClassFiles(file, param , liste);
-            for(String l:liste){
-                
-                String pack = l.replace(param+".","");
+            Class<?> clazz = Class.forName(pack);
+            boolean isClassAnnotationPresent = clazz.isAnnotationPresent(annotation);
 
-                Class<?> clazz = Class.forName(pack);
-                boolean isClassAnnotationPresent = clazz.isAnnotationPresent(annotation);
-    
-                if (isClassAnnotationPresent) {
-                    filterList.add(pack);
-                }
+            if (isClassAnnotationPresent) {
+                filterList.add(pack);
             }
-            //Call to getController + writing in listeClass.txt
         }
-        catch(Exception err){}
-        finally{
-            return filterList.toArray(new String[filterList.size()]);
-
+        if(filterList.size()==0){
+            throw new Exception("Il n'y aucune classe dans le dossier contollerPath ");
         }
+        //Call to getController + writing in listeClass.txt
       
+        return filterList.toArray(new String[filterList.size()]);
     
     }
 
