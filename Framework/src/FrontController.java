@@ -98,7 +98,6 @@ public class FrontController extends HttpServlet {
         PrintWriter out = res.getWriter();
         String host = this.getInitParameter("host") ;
         String link = req.getRequestURL().toString();
-        // out.println("Init "+link);
 
         String contextPath = req.getContextPath();
 
