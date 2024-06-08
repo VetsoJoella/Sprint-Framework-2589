@@ -37,48 +37,39 @@ public class FrontController extends HttpServlet {
         hashMap = new HashMap<>();
         
         for (String classe : classes){
-            try {
-                Class clazz = Class.forName(classe);
-                Method[] methods = clazz.getDeclaredMethods();
-    
-                for (Method method : methods) {
-                    if (method.isAnnotationPresent(Get.class)) {
-                        Get annotation = method.getAnnotation(Get.class);
-    
-                        // Obtient la valeur de l'annotation
-                        String key = annotation.url();
-                        if(hashMap.containsKey(key)){
-                            Mapping m = hashMap.get(key);
-                            String erreur = "L'url "+key+" est dupliquée.\n Elle existe déja dans la classe "+m.getClassName()+" avec la methode "+m.getMethod(); 
-                            hashMap.clear();
-                            throw new Exception(erreur);
-                         
-                        }
-                        else{
-                            hashMap.put(key,new Mapping(classe,method.getName()));
-                        }
+            Class clazz = Class.forName(classe);
+            Method[] methods = clazz.getDeclaredMethods();
+
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(Get.class)) {
+                    Get annotation = method.getAnnotation(Get.class);
+
+                    // Obtient la valeur de l'annotation
+                    String key = annotation.url();
+                    if(hashMap.containsKey(key)){
+                        Mapping m = hashMap.get(key);
+                        String erreur = "L'url "+key+" est dupliquée.\n Elle existe déja dans la classe "+m.getClassName()+" avec la methode "+m.getMethod(); 
+                        hashMap.clear();
+                        throw new Exception(erreur);
+                        
+                    }
+                    else{
+                        hashMap.put(key,new Mapping(classe,method.getName()));
                     }
                 }
             }
-            catch(Exception err){
-                throw err ;
-            }
-        
-            // personnesMap.put("p1", new Personne("Alice", 30));
         }
+        // personnesMap.put("p1", new Personne("Alice", 30));
+
         
     }
     public void init(){
 
-        //Appel de la fonction loadData
-        try {
+        try{
             initParameter(); 
-
-        } catch(Exception err){
-            err.printStackTrace();
-            System.exit(1);
+        } catch(Exception ee){
+            throw new RuntimeException(ee);
         }
-    
     }
 
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
