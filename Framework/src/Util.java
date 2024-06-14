@@ -1,13 +1,17 @@
 package util;
 
 import annotation.AnnotationController;
+import mapping.Mapping;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.io.File ;
+import java.util.HashMap;
 import java.util.Vector;
 
 public class Util {
-
     
     public static String[] loadData(String param, String path, Class annotation) throws Exception{
 
@@ -59,4 +63,29 @@ public class Util {
             }
         }
     }
+
+    public static boolean isDuplicated(HashMap hashMap,String key) throws Exception{
+
+        if(hashMap.containsKey(key)){
+            Mapping m = (Mapping)hashMap.get(key);
+            String erreur = "L'url "+key+" est dupliquée.\n Elle existe déja dans la classe "+m.getClassName()+" avec la methode "+m.getMethod(); 
+            hashMap.clear();
+            throw new Exception(erreur);
+            
+        }
+        return false ;
+    }
+
+  
+
+    public static boolean isAnnotationPresent(Method method, Class<? extends Annotation>annotation){
+
+        if(method.isAnnotationPresent(annotation)){
+            return true ;
+        }
+        return false ;
+
+    }
+  
+  
 }

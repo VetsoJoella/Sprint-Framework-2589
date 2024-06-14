@@ -1,8 +1,7 @@
 package contoller.main ;
 
 import util.*;
-import annotation.AnnotationController;
-import annotation.Get;
+import annotation.*;
 import mapping.Mapping ;
 import response.ModelView;
 
@@ -13,6 +12,7 @@ import java.util.Vector;
 import java.util.HashMap;
 import java.util.Map;
 import java.lang.reflect.Method;
+import java.net.http.HttpClient;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -42,20 +42,12 @@ public class FrontController extends HttpServlet {
                 Method[] methods = clazz.getDeclaredMethods();
     
                 for (Method method : methods) {
-                    if (method.isAnnotationPresent(Get.class)) {
+                    if (Util.isAnnotationPresent(method,Get.class)) {
                         Get annotation = method.getAnnotation(Get.class);
-    
-                        // Obtient la valeur de l'annotation
                         String key = annotation.url();
-                        if(hashMap.containsKey(key)){
-                            Mapping m = hashMap.get(key);
-                            String erreur = "L'url "+key+" est dupliquée.\n Elle existe déja dans la classe "+m.getClassName()+" avec la methode "+m.getMethod(); 
-                            hashMap.clear();
-                            throw new Exception(erreur);
-                         
-                        }
-                        else{
-                            hashMap.put(key,new Mapping(classe,method.getName()));
+
+                        if(Util.isDuplicated(hashMap, key)==false){ 
+                            hashMap.put(key,new Mapping(classe,method.getName(),method.getParameterTypes()));
                         }
                     }
                 }
@@ -63,10 +55,8 @@ public class FrontController extends HttpServlet {
             catch(Exception err){
                 throw err ;
             }
-        
             // personnesMap.put("p1", new Personne("Alice", 30));
         }
-        
     }
     public void init(){
 
@@ -93,24 +83,28 @@ public class FrontController extends HttpServlet {
 		
 	}
 
+    Map<String, String[]> getValueSend(HttpServletRequest request, HttpServletResponse response){
+
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        return parameterMap ;
+    }
+
     void processRequest(HttpServletRequest req, HttpServletResponse res)throws ServletException, IOException {
 
         PrintWriter out = res.getWriter();
         String host = this.getInitParameter("host") ;
         String link = req.getRequestURL().toString();
-
         String contextPath = req.getContextPath();
 
         link = link.substring(host.length()+contextPath.length()-1);
-        // out.println("C "+contextPath);
-        // out.println("Without "+link);
-
+        
         Mapping map = hashMap.get(link);
 
         if(map!=null){
             try {
-                Object responseMethod = UtilController.invoke(map);
                 
+                Map<String, String[]> formValue = getValueSend(req, res); 
+                Object responseMethod = UtilController.invoke(map,formValue);
                 if(responseMethod instanceof String){
                     out.println("Réponse de la methode est "+responseMethod);
 
@@ -120,17 +114,13 @@ public class FrontController extends HttpServlet {
 
                     HashMap dataValues = ((ModelView)responseMethod).getData() ;
                     dataValues.forEach((key, value) -> req.setAttribute((String)key,dataValues.get(key)));
-                    // for (String key : dataValues.values()) {
-                    //     req.setAttribute(key,dataValues.get(key));
-                    // }
                     rd.forward(req, res);
 
                 } else{
 
                     out.println("Type de retour non appropriée");
                 }
-                // out.println("Nom de la classe associée a cette methode est "+map.getClassName());
-                // out.println("Nom de la methode associée a cette methode est "+map.getMethod());
+                
             }
            catch(Exception err){
                 out.println( "Error "+err.getMessage());
@@ -142,9 +132,6 @@ public class FrontController extends HttpServlet {
             out.println("404 , method not found  ");
 
         }
-       
 
     }    
-
-
 }
