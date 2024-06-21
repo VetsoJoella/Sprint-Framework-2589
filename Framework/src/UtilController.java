@@ -24,9 +24,10 @@ public class UtilController {
 
         Object response = null ;
         try {
+            
             Class clazz = Class.forName(map.getClassName());
             Method method = clazz.getMethod(map.getMethod(),map.getParameterTypes());
-            Object[] data = macthValues(method, formValue) ;
+            Object[] data = matchValues(method, formValue) ;
             response = method.invoke(clazz.newInstance(),data);
         }
         catch(Exception err){
@@ -36,7 +37,7 @@ public class UtilController {
         return response ;
     }
 
-    public static Object[] macthValues(Method method,Map<String,String[]> data){
+    public static Object[] matchValues(Method method,Map<String,String[]> data) throws Exception{
         
         Object[] formValues = null ;
 
@@ -45,32 +46,35 @@ public class UtilController {
                 return formValues ;
             }
             else {
-                // for (Map.Entry<String, String[]> entry : data.entrySet()) {
-                //     String paramName = entry.getKey();
-                //     String[] paramValues = entry.getValue();
-                // }
-                formValues = new Object[data.size()];
+                
                 Parameter[] parameters = method.getParameters();
+                formValues = new Object[parameters.length];
+                Typing.instance(parameters, formValues);                                           // Instancier les attributs de la methode
+                
+                for (Map.Entry<String, String[]> entry : data.entrySet()) {
 
-                for (int i = 0 ; i<parameters.length ; i++) {
-                    
-                    String[] value = null ;
-                    if(parameters[i].isAnnotationPresent(Param.class)){
+                    String key = entry.getKey();
+                    String[] splitKey = key.split("\\.");
+                    String[] values = entry.getValue();
+                    Object[] paramObject =getParameterForData(parameters,splitKey[0],Param.class);
 
-                        String name = ((Param)parameters[i].getAnnotation(Param.class)).name();
-                        value = data.get(name);
+                    Parameter param = (Parameter)paramObject[0] ; int indice = (int)paramObject[1]; 
 
-                    } else {
+                    if(splitKey.length==1){
+
+                        if(param.getType().isArray() || param.getClass().isArray()){
+                            formValues[indice] = Typing.arrayCast(values,param.getType()) ; 
+                        }
+                        else{
+                            formValues[indice] = Typing.convert(values[0],param.getType()) ; 
+                        }
+                    }
+                    else {
                        
-                        value = data.get(parameters[i].getName());
+                        Typing.setObject(formValues[indice],values,splitKey[1]);
+                       
                     }
-
-                    if(parameters[i].getType().isArray() || parameters[i].getClass().isArray()){
-                        formValues[i] = arrayCast(value,parameters[i].getType()) ; 
-                    }
-                    else{
-                        formValues[i] = convert(value[0],parameters[i].getType()) ; 
-                    }
+                    
                 }
             }
         }
@@ -80,65 +84,21 @@ public class UtilController {
         return formValues ;
     }
 
-    // public static Method getMethodWithAnnotation(Class clazz,String url,Class<? extends Annotation>annotation){
+    
 
-    //     for (Method method : clazz.getDeclaredMethods()) {
-    //         // Vérifier si la méthode est annotée avec l'annotation spécifique
-    //         if (method.isAnnotationPresent(annotation) && url.equalsIgnoreCase(method.getAnnotation(annotation).url())) {
-    //             // Si la méthode est annotée, renvoyer la méthode
-    //             return method;
-    //         }
-    //     }
-    //     return null ;
-    // }
+    public static Object[] getParameterForData(Parameter[] parameters,String name,Class annotation){
 
-
-    public static <T> T[] arrayCast(Object o,Class<T> clazz) throws Exception{
-
-        int length = ((Object[]) o).length;
-        T[] array = allocate(((Object[])o).length, clazz) ; 
-        for (int i = 0; i < length; i++) {
-            Object element = ((Object[]) o)[i];
-            // Convert each element individually, assuming convert method exists
-            array[i] = (T) convert(element, clazz.getComponentType());
+        for(int i =0; i<parameters.length ; i++){
+            String nameParam = parameters[i].getName() ; 
+            if(parameters[i].isAnnotationPresent(annotation)){
+                nameParam = ((Param)parameters[i].getAnnotation(Param.class)).name();
+            }
+           if(nameParam.equalsIgnoreCase(name)){
+                return new Object[]{parameters[i],i};
+           }
         }
-        return array;
-      
+        return null ;
+    
     }
-
-    public static <T>T[] allocate(int nb, Class<T> clazz){
-
-        T[] array = (T[]) Array.newInstance(clazz.getComponentType(), nb);
-        return array;
-    }
-
-    public static <T> T convert(Object str, Class<T> clazz) throws Exception {
-
-        if (clazz==String.class) {
-            return (T)str;
-        }
-        if (!clazz.isPrimitive()){
-            Constructor<?> constructor = clazz.getConstructor(String.class);
-            return (T)constructor.newInstance(str);
-
-        } else{
-            Method m = wrapper(clazz);
-            return (T)m.invoke(null,str.toString());
-        }
-       
-    }
-
-    public static Method wrapper(Class<?> clazz) throws Exception{
-
-        if (clazz == int.class) return Integer.class.getMethod("parseInt", String.class);
-        if (clazz == long.class) return Long.class.getMethod("parseLong", String.class);
-        if (clazz == float.class) return Float.class.getMethod("parseFloat", String.class);
-        if (clazz == double.class) return Double.class.getMethod("parseDouble", String.class);
-        if (clazz == byte.class) return Byte.class.getMethod("parseByte", String.class);
-        if (clazz == short.class) return Short.class.getMethod("parseShort", String.class);
-        return null;
-        
-    }  
-
     
 }

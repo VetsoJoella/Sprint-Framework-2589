@@ -11,6 +11,7 @@ import java.io.File ;
 import java.util.Vector;
 import java.util.HashMap;
 import java.util.Map;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.http.HttpClient;
 
@@ -98,6 +99,7 @@ public class FrontController extends HttpServlet {
 
         link = link.substring(host.length()+contextPath.length()-1);
         
+        System.out.println("Lien est "+link);
         Mapping map = hashMap.get(link);
 
         if(map!=null){
@@ -122,9 +124,14 @@ public class FrontController extends HttpServlet {
                 }
                 
             }
+            catch (InvocationTargetException e) {
+                // e.printStackTrace();
+                System.out.println("Cause réelle: " + e.getTargetException().getMessage());
+            }
            catch(Exception err){
                 out.println( "Error "+err.getMessage());
                 err.printStackTrace();
+                // err.getTargetException().getMessage();
            }
 
         }
