@@ -82,7 +82,7 @@ public class Typing {
     }
 
     
-    public static void setObject(Object o,String[] data, String methodName) throws Exception{
+    public static void setObject(Object o,Object data, String methodName) throws Exception{
 
         String methodNameCapitalize = Util.capitalize(methodName);
         Method m = getMethod(o,"set"+methodNameCapitalize);
@@ -93,7 +93,7 @@ public class Typing {
 
         }
         else {
-            m.invoke(o,convert(data[0],parameters[0].getType()));
+            m.invoke(o,convert(data,parameters[0].getType()));
         }
 
     }
