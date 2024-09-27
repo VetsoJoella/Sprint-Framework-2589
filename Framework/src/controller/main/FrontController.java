@@ -66,9 +66,9 @@ public class FrontController extends HttpServlet {
             // personnesMap.put("p1", new Personne("Alice", 30));
         }
     }
-    public void init(){
+    //Initialisation : get de toutes les classes annotées controller
+    public void init(){ 
 
-        //Appel de la fonction loadData
         try {
             initParameter(); 
 
@@ -91,6 +91,7 @@ public class FrontController extends HttpServlet {
 		
 	}
 
+    // Get des valeurs dans envoyes dans les urls
     Map<String, String[]> getValueSend(HttpServletRequest request, HttpServletResponse response){
 
         Map<String, String[]> parameterMap = request.getParameterMap();
@@ -140,7 +141,8 @@ public class FrontController extends HttpServlet {
         }
     }    
 
-   void updateSession(Session session, HttpSession httpSession){
+    // mise à jour de la session
+    void updateSession(Session session, HttpSession httpSession){
 
         System.out.println("Updating session ");
 
@@ -161,6 +163,7 @@ public class FrontController extends HttpServlet {
         }
    }
 
+   // Création de la session en mettant la valeur du hhtpSession dans une classe session 
    Session createSession(HttpSession httpSession){
 
         Session session = new Session();
@@ -174,6 +177,7 @@ public class FrontController extends HttpServlet {
 
    }
 
+   // Modification de la session
    void setSession(Session session, Object instanceOfClass,  HttpSession httpSession) throws Exception{
         Field sessionField = Reflect.fieldExist(instanceOfClass.getClass(),Session.class);
         if(sessionField != null ){               // Vérifier si la classe a un field Session pour l'injection de dépendance
@@ -182,6 +186,7 @@ public class FrontController extends HttpServlet {
         }
     }
 
+    // Print de réponse en format json
     void printJson(String json, HttpServletResponse response) throws Exception{
         PrintWriter out = response.getWriter();
         response.setContentType("application/json");
