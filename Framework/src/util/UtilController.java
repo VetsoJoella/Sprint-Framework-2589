@@ -26,7 +26,7 @@ public class UtilController {
         try {
             
             Class clazz = Class.forName(map.getClassName());
-            Method method = clazz.getMethod(map.getMethod(),map.getParameterTypes());
+            Method method = map.getMethod();
             Object[] data = matchValues(method, formValue) ;
             response = method.invoke(instanceOfClass,data);
         }

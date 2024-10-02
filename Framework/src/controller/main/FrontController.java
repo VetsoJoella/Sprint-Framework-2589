@@ -18,7 +18,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.http.HttpClient;
-
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,12 +49,14 @@ public class FrontController extends HttpServlet {
                 Method[] methods = clazz.getDeclaredMethods();
     
                 for (Method method : methods) {
-                    if (Util.isAnnotationPresent(method,Get.class)) {
-                        Get annotation = method.getAnnotation(Get.class);
+                    if (Util.isAnnotationPresent(method,Url.class)) {
+                        Url annotation = method.getAnnotation(Url.class);
                         String key = annotation.url();
 
                         if(!Util.isDuplicated(hashMap, key)){ 
-                            hashMap.put(key,new Mapping(classe,method.getName(),method.getParameterTypes()));
+                            String verb = Util.getVerbFromAnnotation(method) ;
+                            hashMap.put(key,new Mapping(classe, method, verb));
+                            // hashMap.put(key,new Mapping(classe,method.getName(),method.getParameterTypes()));
                         }
                     }
                 }
@@ -66,9 +67,11 @@ public class FrontController extends HttpServlet {
             // personnesMap.put("p1", new Personne("Alice", 30));
         }
     }
+
+
     //Initialisation : get de toutes les classes annotées controller
     public void init(){ 
-
+        
         try {
             initParameter(); 
 
@@ -81,13 +84,23 @@ public class FrontController extends HttpServlet {
 
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		
-        processRequest(req,res);
+        try {
+            processRequest(req,res);
+
+        } catch (Exception e) {
+            handleError(e, req, res);
+        }
 		
 	}
 
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		
-        processRequest(req,res);
+        try {
+            processRequest(req,res);
+
+        } catch (Exception e) {
+            handleError(e, req, res);
+        }
 		
 	}
 
@@ -98,17 +111,17 @@ public class FrontController extends HttpServlet {
         return parameterMap ;
     }
 
-    void processRequest(HttpServletRequest req, HttpServletResponse res)throws ServletException, IOException {
+    void processRequest(HttpServletRequest req, HttpServletResponse res)throws ServletException, IOException, Exception {
 
         PrintWriter out = res.getWriter();
-        String host = this.getInitParameter("host") ;
+        String host = getInitParameter("host") ;
         String link = req.getRequestURL().toString();
         String contextPath = req.getContextPath();
 
         link = link.substring(host.length()+contextPath.length()-1);
         
         System.out.println("Lien est "+link);
-        Mapping map = hashMap.get(link);
+        Mapping map = Mapping.get(hashMap, link, req.getMethod());
 
         if(map!=null){
             try {
@@ -120,7 +133,7 @@ public class FrontController extends HttpServlet {
                 setSession(session, instanceOfClass, httpSession);
                 Object responseMethod = UtilController.invoke(instanceOfClass, map, formValue);
                 updateSession(session,httpSession);
-                if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(instanceOfClass.getClass().getMethod(map.getMethod(),map.getParameterTypes()), RestApi.class)){
+                if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(map.getMethod(), RestApi.class)){
                     giveResponse(responseMethod, res);
                 } else { 
                     giveResponse(responseMethod, req, res);
@@ -220,4 +233,23 @@ public class FrontController extends HttpServlet {
         printJson(jsonResponse, res);
    }
 
+   void handleError(Exception e, HttpServletRequest req, HttpServletResponse res)
+            throws IOException {
+        // Logique pour gérer les erreurs
+        res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // 500 Internal Server Error
+        res.setContentType("text/html");
+
+        // Générer une page d'erreur comme le fait Tomcat
+        PrintWriter out = res.getWriter();
+        out.println("<html><head><title>Erreur interne</title></head><body>");
+        out.println("<h1>Une erreur s'est produite</h1>");
+        out.println("<p>" + e.getMessage() + "</p>");
+
+        // Afficher la stack trace (comme le fait Tomcat)
+        out.println("<pre>");
+        e.printStackTrace(out);
+        out.println("</pre>");
+
+        out.println("</body></html>");
+    }
 }
