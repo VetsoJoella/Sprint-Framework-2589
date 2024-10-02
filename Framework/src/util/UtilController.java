@@ -20,7 +20,7 @@ import java.lang.reflect.Array;
 public class UtilController {
     
     
-    public static Object invoke(Mapping map, Map<String, String[]> formValue) throws Exception{
+    public static Object invoke(Object instanceOfClass, Mapping map, Map<String, String[]> formValue) throws Exception{
 
         Object response = null ;
         try {
@@ -28,7 +28,7 @@ public class UtilController {
             Class clazz = Class.forName(map.getClassName());
             Method method = clazz.getMethod(map.getMethod(),map.getParameterTypes());
             Object[] data = matchValues(method, formValue) ;
-            response = method.invoke(clazz.newInstance(),data);
+            response = method.invoke(instanceOfClass,data);
         }
         catch(Exception err){
             err.printStackTrace();
@@ -48,6 +48,7 @@ public class UtilController {
             else {
                 
                 Parameter[] parameters = method.getParameters();
+                // checkAnnotation(parameters);
                 formValues = new Object[parameters.length];
                 Typing.instance(parameters, formValues);                                           // Instancier les attributs de la methode
                 
@@ -80,13 +81,14 @@ public class UtilController {
         }
         catch(Exception err){
             err.printStackTrace();
+            throw err ;
         }
         return formValues ;
     }
 
     
 
-    public static Object[] getParameterForData(Parameter[] parameters,String name,Class annotation){
+    public static Object[] getParameterForData(Parameter[] parameters,String name,Class annotation) throws Exception{
 
         for(int i =0; i<parameters.length ; i++){
             String nameParam = parameters[i].getName() ; 
@@ -96,8 +98,26 @@ public class UtilController {
            if(nameParam.equalsIgnoreCase(name)){
                 return new Object[]{parameters[i],i};
            }
+            // else {
+            //     throw new Exception("ETU 2589 : annotation n'est pas présente sur l'attribut "+(parameters[i]).getName());
+            // }
         }
         return null ;
+    
+    }
+
+    public static void checkAnnotation(Parameter[] parameters) throws Exception{
+
+        for(int i =0; i<parameters.length ; i++){
+           
+            if(parameters[i].isAnnotationPresent(Param.class)==false){
+          
+            
+                throw new Exception("ETU 2589 : annotation n'est pas présente sur l'attribut "+(parameters[i]).getName());
+            }
+            
+        }
+       
     
     }
     

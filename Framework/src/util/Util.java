@@ -5,6 +5,7 @@ import mapping.Mapping;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.io.File ;
@@ -32,6 +33,7 @@ public class Util {
 
             if (isClassAnnotationPresent) {
                 filterList.add(pack);
+                System.out.println(pack);
             }
         }
         if(filterList.size()==0){
@@ -78,17 +80,42 @@ public class Util {
 
   
 
-    public static boolean isAnnotationPresent(Method method, Class<? extends Annotation>annotation){
+    // public static boolean isAnnotationPresent(Method method, Class<? extends Annotation>annotation){
 
-        if(method.isAnnotationPresent(annotation)){
+    //     if(method.isAnnotationPresent(annotation)){
+    //         return true ;
+    //     }
+    //     return false ;
+
+    // }
+
+    public static boolean isAnnotationPresent(Method method, Class<? extends Annotation>annotation){
+         if(method.isAnnotationPresent(annotation)){
             return true ;
         }
         return false ;
-
     }
+
+    public static boolean isAnnotationPresent(Object object, Class<? extends Annotation>annotation){
+        if(object.getClass().isAnnotationPresent(annotation)){
+           return true ;
+       }
+       return false ;
+   }
+
+   public static boolean isAnnotationPresent(Field field, Class<? extends Annotation>annotation){
+    if(field.isAnnotationPresent(annotation)){
+       return true ;
+   }
+   return false ;
+}
 
     public static String capitalize(String string){
         return Character.toUpperCase(string.charAt(0)) + string.substring(1);
+    }
+
+    public static String decapitalize(String string){
+        return string.toLowerCase();
     }
   
   
