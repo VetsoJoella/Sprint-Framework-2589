@@ -3,6 +3,7 @@ package contoller.main ;
 import util.*;
 import annotation.*;
 import mapping.Mapping ;
+import mapping.Verb;
 import response.ModelView;
 import session.Session;
 import controller.reflect.Reflect;
@@ -43,20 +44,30 @@ public class FrontController extends HttpServlet {
         String[] classes = Util.loadData(param,path,AnnotationController.class);
         hashMap = new HashMap<>();
         
-        for (String classe : classes){
+        for (String classe : classes){              // boucle des classes
             try {
                 Class clazz = Class.forName(classe);
                 Method[] methods = clazz.getDeclaredMethods();
     
-                for (Method method : methods) {
-                    if (Util.isAnnotationPresent(method,Url.class)) {
+                for (Method method : methods) {     // boucles des méthodes présentes dans la clasee
+                    if (Util.isAnnotationPresent(method,Url.class)) {       // vérification de la présence de l'url
+
                         Url annotation = method.getAnnotation(Url.class);
                         String key = annotation.url();
+                        Mapping mapping = hashMap.get(key) ;
+                        String verb = Util.getVerbFromAnnotation(method);
 
-                        if(!Util.isDuplicated(hashMap, key)){ 
-                            String verb = Util.getVerbFromAnnotation(method) ;
-                            hashMap.put(key,new Mapping(classe, method, verb));
-                            // hashMap.put(key,new Mapping(classe,method.getName(),method.getParameterTypes()));
+                        if(mapping!=null){ 
+                            try {
+                                throw new Exception("La méthode associé à l'url "+key+" avec la méthode "+verb+" existe déjà");
+
+                            } catch(Exception e){
+                                mapping.add(new Verb(verb, method));
+                            }
+                        } else {
+                            mapping = new Mapping(classe);
+                            mapping.add(new Verb(verb, method));
+                            hashMap.put(key,mapping); 
                         }
                     }
                 }
@@ -64,7 +75,6 @@ public class FrontController extends HttpServlet {
             catch(Exception err){
                 throw err ;
             }
-            // personnesMap.put("p1", new Personne("Alice", 30));
         }
     }
 
@@ -117,37 +127,34 @@ public class FrontController extends HttpServlet {
         String host = getInitParameter("host") ;
         String link = req.getRequestURL().toString();
         String contextPath = req.getContextPath();
-
         link = link.substring(host.length()+contextPath.length()-1);
-        
-        System.out.println("Lien est "+link);
-        Mapping map = Mapping.get(hashMap, link, req.getMethod());
 
-        if(map!=null){
+        Mapping map = hashMap.get(link);
+
+        if(map!=null && map.get(req.getMethod())!=null){
             try {
-                
+                Verb verb = map.get(req.getMethod()) ;
                 Map<String, String[]> formValue = getValueSend(req, res); 
                 Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
                 HttpSession httpSession = req.getSession();
                 Session session = null ;
                 setSession(session, instanceOfClass, httpSession);
-                Object responseMethod = UtilController.invoke(instanceOfClass, map, formValue);
+                Object responseMethod = UtilController.invoke(instanceOfClass, verb, formValue);
                 updateSession(session,httpSession);
-                if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(map.getMethod(), RestApi.class)){
+                
+                if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(verb.getMethod(), RestApi.class)){
                     giveResponse(responseMethod, res);
                 } else { 
                     giveResponse(responseMethod, req, res);
                 }
             }
-            catch (InvocationTargetException e) {
-                // e.printStackTrace();
-                System.out.println("Cause réelle: " + e.getTargetException().getMessage());
-            }
-           catch(Exception err){
+            catch(Exception err){
                 RequestDispatcher rd = req.getRequestDispatcher("/views/error.jsp");
                 req.setAttribute("error",err.getMessage());
                 rd.forward(req, res);
            }
+            // e.printStackTrace();
+            
         }
         else{
             out.println("404 , method not found  ");

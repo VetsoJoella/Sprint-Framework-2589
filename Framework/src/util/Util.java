@@ -6,9 +6,7 @@ import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.HashMap ;
-import java.util.Vector;
-import mapping.Mapping;
+import java.util.Vector ;
 
 public class Util {
     
@@ -67,19 +65,6 @@ public class Util {
         }
     }
 
-    // Vérifcation du doublon
-
-    public static boolean isDuplicated(HashMap hashMap,String key) throws Exception{
-
-        if(hashMap.containsKey(key)){
-            Mapping m = (Mapping)hashMap.get(key);
-            String erreur = "L'url "+key+" est dupliquée.\n Elle existe déja dans la classe "+m.getClassName()+" avec la methode "+m.getMethod(); 
-            hashMap.clear();
-            throw new Exception(erreur);
-            
-        }
-        return false ;
-    }
 
     // Vérification de la présence d'une annotation dans une méthode
     public static boolean isAnnotationPresent(Method method, Class<? extends Annotation>annotation){

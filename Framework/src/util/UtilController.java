@@ -2,31 +2,20 @@
 package util;
 
 import annotation.*;
-import mapping.Mapping;
-
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.io.File ;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Array;
+import java.util.Map;
+import mapping.Verb;
 
 public class UtilController {
     
     
-    public static Object invoke(Object instanceOfClass, Mapping map, Map<String, String[]> formValue) throws Exception{
+    public static Object invoke(Object instanceOfClass, Verb verb, Map<String, String[]> formValue) throws Exception{
 
         Object response = null ;
         try {
             
-            Class clazz = Class.forName(map.getClassName());
-            Method method = map.getMethod();
+            Method method = verb.getMethod();
             Object[] data = matchValues(method, formValue) ;
             response = method.invoke(instanceOfClass,data);
         }

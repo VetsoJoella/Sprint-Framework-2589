@@ -1,23 +1,13 @@
 package mapping ;
-import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Mapping {
 
     String className;
-    // String method ;
-    // Class<?>[] parameterTypes ;
-    Method method ;
-    String verb ;
+    // String verb ;
+    List<Verb> verbs = new ArrayList<>() ;
 
-
-    // public Class<?>[] getParameterTypes() {
-    //     return parameterTypes;
-    // }
-
-    // public void setParameterTypes(Class<?>[] parameterTypes) {
-    //     this.parameterTypes = parameterTypes;
-    // }
 
     public String getClassName() {
         return className;
@@ -26,41 +16,52 @@ public class Mapping {
     public void setClassName(String className) {
         this.className = className;
     }
-
-    public Method getMethod() {
-        return method;
+    
+    public List<Verb> getVerbs() {
+        return verbs;
     }
 
-    public void setMethod(Method method) {
-        this.method = method;
+    public void setVerbs(List<Verb> verbs) {
+        this.verbs = verbs;
     }
 
-    public String getVerb(){return verb;}
-
-    public void setVerb(String verb){
-        this.verb = verb ; 
+    public void add(Verb verb){
+        getVerbs().add(verb);
     }
 
-    public static Mapping get(HashMap<String, Mapping> hashMap, String link, String verb) throws Exception{
+    public Verb get(String verb) throws Exception{
 
-        Mapping map = hashMap.get(link);
-        if(map==null){
-            throw new Exception("La méthode mappé avec l'url "+link+" n'existe pas");
-        } if(!map.getVerb().equalsIgnoreCase(verb)){
-            throw new Exception("L'url "+link+" n'existe pas avec la méthode "+verb);
+        for(Verb v : getVerbs()){
+            if(v.getVerb().equalsIgnoreCase(verb)){
+                return v ;
+            }
         }
-        return map ;
+       throw new Exception("La méthode recherché avec l'url et la methode "+verb+" n'existe pas");
 
     }
 
     public Mapping(){}
 
-    public Mapping(String className, Method method, String verb) {
+    public Mapping(String className) {
 
         setClassName(className);
-        setMethod(method);
-        setVerb(verb);
     }
+
+    
+    // Vérifcation du doublon
+
+    // public static boolean isDuplicated(HashMap hashMap,String key) throws Exception{
+
+    //     if(hashMap.containsKey(key)){
+    //         Mapping m = (Mapping)hashMap.get(key);
+    //         String erreur = "L'url "+key+" est dupliquée.\n Elle existe déja dans la classe "+m.getClassName()+" avec la methode "+m.getMethod(); 
+    //         hashMap.clear();
+    //         throw new Exception(erreur);
+            
+    //     }
+    //     return false ;
+    // }
+  
     
 
 }
