@@ -1,19 +1,16 @@
 package util;
 
-import annotation.AnnotationController;
-import mapping.Mapping;
-
-import java.io.IOException;
+import annotation.Get;
+import annotation.Post;
+import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.io.File ;
-import java.util.HashMap;
-import java.util.Vector;
+import java.util.Vector ;
 
 public class Util {
     
+    // Load des methodes
     public static String[] loadData(String param, String path, Class annotation) throws Exception{
 
         Vector<String> liste = new Vector<>();
@@ -45,6 +42,8 @@ public class Util {
     
     }
 
+    // Recherche des classes ayant une annotation controller
+
     public static void findClassFiles(File file, String currentPath,Vector<String> liste){
 
         if(file.isDirectory()){
@@ -66,29 +65,8 @@ public class Util {
         }
     }
 
-    public static boolean isDuplicated(HashMap hashMap,String key) throws Exception{
 
-        if(hashMap.containsKey(key)){
-            Mapping m = (Mapping)hashMap.get(key);
-            String erreur = "L'url "+key+" est dupliquée.\n Elle existe déja dans la classe "+m.getClassName()+" avec la methode "+m.getMethod(); 
-            hashMap.clear();
-            throw new Exception(erreur);
-            
-        }
-        return false ;
-    }
-
-  
-
-    // public static boolean isAnnotationPresent(Method method, Class<? extends Annotation>annotation){
-
-    //     if(method.isAnnotationPresent(annotation)){
-    //         return true ;
-    //     }
-    //     return false ;
-
-    // }
-
+    // Vérification de la présence d'une annotation dans une méthode
     public static boolean isAnnotationPresent(Method method, Class<? extends Annotation>annotation){
          if(method.isAnnotationPresent(annotation)){
             return true ;
@@ -96,6 +74,7 @@ public class Util {
         return false ;
     }
 
+    // Vérification de la présence d'une annotation sur un objet
     public static boolean isAnnotationPresent(Object object, Class<? extends Annotation>annotation){
         if(object.getClass().isAnnotationPresent(annotation)){
            return true ;
@@ -103,20 +82,46 @@ public class Util {
        return false ;
    }
 
+    // Vérification de la présence d'une annotation sur un field
    public static boolean isAnnotationPresent(Field field, Class<? extends Annotation>annotation){
-    if(field.isAnnotationPresent(annotation)){
-       return true ;
-   }
-   return false ;
-}
+        if(field.isAnnotationPresent(annotation)){
+            return true ;
+        }
+        return false ;
+    }
 
+
+    // Fonction de capitalisation 
     public static String capitalize(String string){
         return Character.toUpperCase(string.charAt(0)) + string.substring(1);
     }
 
+    // Fonction de décapitalisation 
     public static String decapitalize(String string){
         return string.toLowerCase();
     }
+
+    // Get de l'annotation présent sur la méhode
+    public static String getVerbFromAnnotation(Method method){
+
+        String annotation = "Get";
+        Class<? extends Annotation>[] listesAnnotationPossible = new Class[]{Get.class, Post.class};
+        Annotation[] annotations = method.getDeclaredAnnotations();
+        
+        for (Annotation a : annotations) {
+            for (Class<? extends Annotation> possibleAnnotation : listesAnnotationPossible) {
+                if (a.annotationType().equals(possibleAnnotation)) {
+                    annotation = a.annotationType().getSimpleName(); 
+                    return annotation ;
+                }
+            }
+        }
+        return annotation;
+    }
+
+    // public Map getMethod
+
+    // public static Mapping getFromM()
   
   
 }

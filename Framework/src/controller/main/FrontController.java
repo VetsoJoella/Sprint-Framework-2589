@@ -3,9 +3,11 @@ package contoller.main ;
 import util.*;
 import annotation.*;
 import mapping.Mapping ;
+import mapping.Verb;
 import response.ModelView;
 import session.Session;
 import controller.reflect.Reflect;
+import exception.ConflictMethodException;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,7 +20,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.http.HttpClient;
-
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +29,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.google.gson.Gson;
 
@@ -44,18 +46,32 @@ public class FrontController extends HttpServlet {
         String[] classes = Util.loadData(param,path,AnnotationController.class);
         hashMap = new HashMap<>();
         
-        for (String classe : classes){
+        for (String classe : classes){              // boucle des classes
             try {
                 Class clazz = Class.forName(classe);
                 Method[] methods = clazz.getDeclaredMethods();
     
-                for (Method method : methods) {
-                    if (Util.isAnnotationPresent(method,Get.class)) {
-                        Get annotation = method.getAnnotation(Get.class);
+                for (Method method : methods) {     // boucles des méthodes présentes dans la clasee
+                    if (Util.isAnnotationPresent(method,Url.class)) {       // vérification de la présence de l'url
+                    
+                        String verb = Util.getVerbFromAnnotation(method);
+                        Url annotation = method.getAnnotation(Url.class);
                         String key = annotation.url();
+                        Mapping mapping = hashMap.get(key) ;
+                        boolean exist = true ;
+                        if(mapping!=null){ 
 
-                        if(!Util.isDuplicated(hashMap, key)){ 
-                            hashMap.put(key,new Mapping(classe,method.getName(),method.getParameterTypes()));
+                            if(!(mapping.getVerbs().add(new Verb(verb, method)))){
+                                throw new ConflictMethodException("L'url "+key+ "avec le verb "+verb+" est dupliqué");
+                            }
+                            System.out.println("Url "+key+" avec le verb "+verb+" added");
+
+                        } else {
+                            mapping = new Mapping(classe);
+                            mapping.getVerbs().add(new Verb(verb, method));
+                            hashMap.put(key,mapping); 
+                            System.out.println("Url "+key+" avec le verb "+verb+" created");
+
                         }
                     }
                 }
@@ -63,31 +79,43 @@ public class FrontController extends HttpServlet {
             catch(Exception err){
                 throw err ;
             }
-            // personnesMap.put("p1", new Personne("Alice", 30));
         }
     }
+
+
     //Initialisation : get de toutes les classes annotées controller
     public void init(){ 
-
+        
         try {
             initParameter(); 
 
         } catch(Exception err){
-            err.printStackTrace();
-            System.exit(1);
+            
+            getServletContext().setAttribute("buildError",err.getMessage());
+            System.err.println("Erreur dans l'initialisation des controllers");
         }
     
     }
 
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		
-        processRequest(req,res);
+        try {
+            processRequest(req,res);
+
+        } catch (Exception e) {
+            handleError(e, req, res);
+        }
 		
 	}
 
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		
-        processRequest(req,res);
+        try {
+            processRequest(req,res);
+
+        } catch (Exception e) {
+            handleError(e, req, res);
+        }
 		
 	}
 
@@ -98,47 +126,52 @@ public class FrontController extends HttpServlet {
         return parameterMap ;
     }
 
-    void processRequest(HttpServletRequest req, HttpServletResponse res)throws ServletException, IOException {
+    void processRequest(HttpServletRequest req, HttpServletResponse res)throws ServletException, IOException, Exception {
 
-        PrintWriter out = res.getWriter();
-        String host = this.getInitParameter("host") ;
-        String link = req.getRequestURL().toString();
-        String contextPath = req.getContextPath();
+        if(getServletContext().getAttribute("buildError")!=null){
+            System.err.println(getServletContext().getAttribute("buildError"));
+            res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
-        link = link.substring(host.length()+contextPath.length()-1);
-        
-        System.out.println("Lien est "+link);
-        Mapping map = hashMap.get(link);
+        } else {
 
-        if(map!=null){
-            try {
-                
-                Map<String, String[]> formValue = getValueSend(req, res); 
-                Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
-                HttpSession httpSession = req.getSession();
-                Session session = null ;
-                setSession(session, instanceOfClass, httpSession);
-                Object responseMethod = UtilController.invoke(instanceOfClass, map, formValue);
-                updateSession(session,httpSession);
-                if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(instanceOfClass.getClass().getMethod(map.getMethod(),map.getParameterTypes()), RestApi.class)){
-                    giveResponse(responseMethod, res);
-                } else { 
-                    giveResponse(responseMethod, req, res);
+            PrintWriter out = res.getWriter();
+            String host = getInitParameter("host") ;
+            String link = req.getRequestURL().toString();
+            String contextPath = req.getContextPath();
+            link = link.substring(host.length()+contextPath.length()-1);
+
+            Mapping map = hashMap.get(link);
+
+            if(map!=null && map.get(req.getMethod())!=null){
+                try {
+                    Verb verb = map.get(req.getMethod()) ;
+                    Map<String, String[]> formValue = getValueSend(req, res); 
+                    Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
+                    HttpSession httpSession = req.getSession();
+                    Session session = null ;
+                    setSession(session, instanceOfClass, httpSession);
+                    Object responseMethod = UtilController.invoke(instanceOfClass, verb, formValue);
+                    updateSession(session,httpSession);
+
+                    if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(verb.getMethod(), RestApi.class)){
+                        giveResponse(responseMethod, res);
+                    } else { 
+                        giveResponse(responseMethod, req, res);
+                    }
                 }
-            }
-            catch (InvocationTargetException e) {
+                catch(Exception err){
+                    RequestDispatcher rd = req.getRequestDispatcher("/views/error.jsp");
+                    req.setAttribute("error",err.getMessage());
+                    rd.forward(req, res);
+                }
                 // e.printStackTrace();
-                System.out.println("Cause réelle: " + e.getTargetException().getMessage());
+                
             }
-           catch(Exception err){
-                RequestDispatcher rd = req.getRequestDispatcher("/views/error.jsp");
-                req.setAttribute("error",err.getMessage());
-                rd.forward(req, res);
-           }
+            else{
+                out.println("404 , method not found  ");
+            }
         }
-        else{
-            out.println("404 , method not found  ");
-        }
+        
     }    
 
     // mise à jour de la session
@@ -220,4 +253,23 @@ public class FrontController extends HttpServlet {
         printJson(jsonResponse, res);
    }
 
+   void handleError(Exception e, HttpServletRequest req, HttpServletResponse res)
+            throws IOException {
+        // Logique pour gérer les erreurs
+        res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // 500 Internal Server Error
+        res.setContentType("text/html");
+
+        // Générer une page d'erreur comme le fait Tomcat
+        PrintWriter out = res.getWriter();
+        out.println("<html><head><title>Erreur interne</title></head><body>");
+        out.println("<h1>Une erreur s'est produite</h1>");
+        out.println("<p>" + e.getMessage() + "</p>");
+
+        // Afficher la stack trace (comme le fait Tomcat)
+        out.println("<pre>");
+        e.printStackTrace(out);
+        out.println("</pre>");
+
+        out.println("</body></html>");
+    }
 }
