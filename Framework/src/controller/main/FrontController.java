@@ -168,7 +168,8 @@ public class FrontController extends HttpServlet {
                 
             }
             else{
-                out.println("404 , method not found  ");
+                // out.println("404 , method not found  ");
+                statusCode404(res);
             }
         }
         
@@ -271,5 +272,17 @@ public class FrontController extends HttpServlet {
         out.println("</pre>");
 
         out.println("</body></html>");
+    }
+
+    void statusCode404( HttpServletResponse response) throws Exception{
+
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND); // Définir le statut 404
+        response.setContentType("text/html");  // Définir le type de contenu comme HTML
+        response.getWriter().println("<html>");
+        response.getWriter().println("<head><title>Page Non Trouvée</title></head>");
+        response.getWriter().println("<body>");
+        response.getWriter().println("<h1>Erreur 404 : Page Non Trouvée</h1>");
+        response.getWriter().println("<p>La ressource que vous cherchez n'existe pas.</p>");
+        response.getWriter().println("</body></html>");
     }
 }
