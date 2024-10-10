@@ -41,6 +41,30 @@ public class Verb {
         return this;
     }
 
+
+    // Surcharge de la méthode equals
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof  Verb){
+            if(getVerb().equalsIgnoreCase(((Verb)obj).getVerb())){
+                return true ; 
+            }
+            // if(getMethod().getName().equalsIgnoreCase(((Verb)obj).getMethod().getName())){
+            //     return true ; 
+            // }
+        }
+        return false ;
+    }
+
+    // Surcharge de la méthode hashCode
+    @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + (verb != null ? verb.hashCode() : 0);
+        // result = 31 * result + age;
+        return result;
+    }
+
    
 
     

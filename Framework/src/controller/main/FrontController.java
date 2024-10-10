@@ -7,6 +7,7 @@ import mapping.Verb;
 import response.ModelView;
 import session.Session;
 import controller.reflect.Reflect;
+import exception.ConflictMethodException;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -28,6 +29,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.google.gson.Gson;
 
@@ -51,23 +53,25 @@ public class FrontController extends HttpServlet {
     
                 for (Method method : methods) {     // boucles des méthodes présentes dans la clasee
                     if (Util.isAnnotationPresent(method,Url.class)) {       // vérification de la présence de l'url
-
+                    
+                        String verb = Util.getVerbFromAnnotation(method);
                         Url annotation = method.getAnnotation(Url.class);
                         String key = annotation.url();
                         Mapping mapping = hashMap.get(key) ;
-                        String verb = Util.getVerbFromAnnotation(method);
-
+                        boolean exist = true ;
                         if(mapping!=null){ 
-                            try {
-                                throw new Exception("La méthode associé à l'url "+key+" avec la méthode "+verb+" existe déjà");
 
-                            } catch(Exception e){
-                                mapping.add(new Verb(verb, method));
+                            if(!(mapping.getVerbs().add(new Verb(verb, method)))){
+                                throw new ConflictMethodException("L'url "+key+ "avec le verb "+verb+" est dupliqué");
                             }
+                            System.out.println("Url "+key+" avec le verb "+verb+" added");
+
                         } else {
                             mapping = new Mapping(classe);
-                            mapping.add(new Verb(verb, method));
+                            mapping.getVerbs().add(new Verb(verb, method));
                             hashMap.put(key,mapping); 
+                            System.out.println("Url "+key+" avec le verb "+verb+" created");
+
                         }
                     }
                 }
@@ -86,8 +90,9 @@ public class FrontController extends HttpServlet {
             initParameter(); 
 
         } catch(Exception err){
-            err.printStackTrace();
-            System.exit(1);
+            
+            getServletContext().setAttribute("buildError",err.getMessage());
+            System.err.println("Erreur dans l'initialisation des controllers");
         }
     
     }
@@ -123,42 +128,50 @@ public class FrontController extends HttpServlet {
 
     void processRequest(HttpServletRequest req, HttpServletResponse res)throws ServletException, IOException, Exception {
 
-        PrintWriter out = res.getWriter();
-        String host = getInitParameter("host") ;
-        String link = req.getRequestURL().toString();
-        String contextPath = req.getContextPath();
-        link = link.substring(host.length()+contextPath.length()-1);
+        if(getServletContext().getAttribute("buildError")!=null){
+            System.err.println(getServletContext().getAttribute("buildError"));
+            res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
-        Mapping map = hashMap.get(link);
+        } else {
 
-        if(map!=null && map.get(req.getMethod())!=null){
-            try {
-                Verb verb = map.get(req.getMethod()) ;
-                Map<String, String[]> formValue = getValueSend(req, res); 
-                Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
-                HttpSession httpSession = req.getSession();
-                Session session = null ;
-                setSession(session, instanceOfClass, httpSession);
-                Object responseMethod = UtilController.invoke(instanceOfClass, verb, formValue);
-                updateSession(session,httpSession);
-                
-                if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(verb.getMethod(), RestApi.class)){
-                    giveResponse(responseMethod, res);
-                } else { 
-                    giveResponse(responseMethod, req, res);
+            PrintWriter out = res.getWriter();
+            String host = getInitParameter("host") ;
+            String link = req.getRequestURL().toString();
+            String contextPath = req.getContextPath();
+            link = link.substring(host.length()+contextPath.length()-1);
+
+            Mapping map = hashMap.get(link);
+
+            if(map!=null && map.get(req.getMethod())!=null){
+                try {
+                    Verb verb = map.get(req.getMethod()) ;
+                    Map<String, String[]> formValue = getValueSend(req, res); 
+                    Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
+                    HttpSession httpSession = req.getSession();
+                    Session session = null ;
+                    setSession(session, instanceOfClass, httpSession);
+                    Object responseMethod = UtilController.invoke(instanceOfClass, verb, formValue);
+                    updateSession(session,httpSession);
+
+                    if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(verb.getMethod(), RestApi.class)){
+                        giveResponse(responseMethod, res);
+                    } else { 
+                        giveResponse(responseMethod, req, res);
+                    }
                 }
+                catch(Exception err){
+                    RequestDispatcher rd = req.getRequestDispatcher("/views/error.jsp");
+                    req.setAttribute("error",err.getMessage());
+                    rd.forward(req, res);
+                }
+                // e.printStackTrace();
+                
             }
-            catch(Exception err){
-                RequestDispatcher rd = req.getRequestDispatcher("/views/error.jsp");
-                req.setAttribute("error",err.getMessage());
-                rd.forward(req, res);
-           }
-            // e.printStackTrace();
-            
+            else{
+                out.println("404 , method not found  ");
+            }
         }
-        else{
-            out.println("404 , method not found  ");
-        }
+        
     }    
 
     // mise à jour de la session
