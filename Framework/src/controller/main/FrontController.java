@@ -58,21 +58,16 @@ public class FrontController extends HttpServlet {
                         Url annotation = method.getAnnotation(Url.class);
                         String key = annotation.url();
                         Mapping mapping = hashMap.get(key) ;
-                        boolean exist = true ;
-                        if(mapping!=null){ 
-
-                            if(!(mapping.getVerbs().add(new Verb(verb, method)))){
-                                throw new ConflictMethodException("L'url "+key+ "avec le verb "+verb+" est dupliqué");
-                            }
-                            System.out.println("Url "+key+" avec le verb "+verb+" added");
-
-                        } else {
+                        if(mapping==null){
                             mapping = new Mapping(classe);
-                            mapping.getVerbs().add(new Verb(verb, method));
                             hashMap.put(key,mapping); 
-                            System.out.println("Url "+key+" avec le verb "+verb+" created");
-
                         }
+
+                        if(!(mapping.getVerbs().add(new Verb(verb, method)))){
+                            throw new ConflictMethodException("L'url "+key+ "avec le verb "+verb+" est dupliqué");
+                        }
+                        System.out.println("Url "+key+" avec le verb "+verb+" added");
+
                     }
                 }
             }
@@ -130,7 +125,8 @@ public class FrontController extends HttpServlet {
 
         if(getServletContext().getAttribute("buildError")!=null){
             System.err.println(getServletContext().getAttribute("buildError"));
-            res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            statusCode500(res,(String)getServletContext().getAttribute("buildError"));
+            // res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
         } else {
 
@@ -276,13 +272,25 @@ public class FrontController extends HttpServlet {
 
     void statusCode404( HttpServletResponse response) throws Exception{
 
-        response.setStatus(HttpServletResponse.SC_NOT_FOUND); // Définir le statut 404
-        response.setContentType("text/html");  // Définir le type de contenu comme HTML
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        response.setContentType("text/html"); 
         response.getWriter().println("<html>");
         response.getWriter().println("<head><title>Page Non Trouvée</title></head>");
         response.getWriter().println("<body>");
         response.getWriter().println("<h1>Erreur 404 : Page Non Trouvée</h1>");
         response.getWriter().println("<p>La ressource que vous cherchez n'existe pas.</p>");
+        response.getWriter().println("</body></html>");
+    }
+
+    void statusCode500( HttpServletResponse response, String message) throws Exception{
+
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        response.setContentType("text/html"); 
+        response.getWriter().println("<html>");
+        response.getWriter().println("<head><title>Problème interne d serveu</title>></head>");
+        response.getWriter().println("<body>");
+        response.getWriter().println("<h1>Erreur 500 : Page Non Trouvée</h1>");
+        response.getWriter().println("<p> "+message+" </p>+");
         response.getWriter().println("</body></html>");
     }
 }

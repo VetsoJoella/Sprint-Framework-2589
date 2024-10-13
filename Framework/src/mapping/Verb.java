@@ -3,6 +3,7 @@
 package mapping;
 
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 public class Verb {
     
@@ -45,6 +46,7 @@ public class Verb {
     // Surcharge de la méthode equals
     @Override
     public boolean equals(Object obj) {
+        System.out.println("appel de equals");
         if(obj instanceof  Verb){
             if(getVerb().equalsIgnoreCase(((Verb)obj).getVerb())){
                 return true ; 
@@ -52,6 +54,7 @@ public class Verb {
             // if(getMethod().getName().equalsIgnoreCase(((Verb)obj).getMethod().getName())){
             //     return true ; 
             // }
+            return getMethod().getName().equalsIgnoreCase(((Verb)obj).getMethod().getName());
         }
         return false ;
     }
@@ -59,10 +62,8 @@ public class Verb {
     // Surcharge de la méthode hashCode
     @Override
     public int hashCode() {
-        int result = 17;
-        result = 31 * result + (verb != null ? verb.hashCode() : 0);
-        // result = 31 * result + age;
-        return result;
+        System.out.println("appel de hash");
+        return Objects.hash(method.getName(), verb);
     }
 
    
