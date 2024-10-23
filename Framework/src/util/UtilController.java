@@ -26,6 +26,73 @@ public class UtilController {
         return response ;
     }
 
+    // public static Object invoke(Object instanceOfClass, Verb verb, HttpServletRequest request)parts throws Exception{
+
+    //     Object response = null ;
+    //     try {
+            
+    //         Method method = verb.getMethod();
+    //         Object[] data = matchValues(method, request) ;
+    //         response = method.invoke(instanceOfClass,data);
+    //     }
+    //     catch(Exception err){
+    //         err.printStackTrace();
+    //         throw err ;
+    //     }
+    //     return response ;
+    // }
+
+    // public static Object[] matchValues(Method method, HttpServletRequest request) throws Exception{
+        
+    //     Object[] formValues = null ;
+
+    //     try{ 
+    //         if(data==null){
+    //             return formValues ;
+    //         }
+    //         else {
+                
+    //             Parameter[] parameters = method.getParameters();
+    //             // checkAnnotation(parameters);
+    //             formValues = new Object[parameters.length];
+    //             Typing.instance(parameters, formValues);                                       // Instancier les attributs de la methode
+
+    //             Map<String, String[]> parameterMap = request.getParameterMap();
+
+    //             for (Map.Entry<String, String[]> entry : data.entrySet()) {
+                       
+    //                 String key = entry.getKey();
+    //                 String[] splitKey = key.split("\\.");
+    //                 String[] values = entry.getValue();
+    //                 Object[] paramObject =getParameterForData(parameters,splitKey[0],Param.class);
+
+    //                 Parameter param = (Parameter)paramObject[0] ; int indice = (int)paramObject[1]; String name = (String)paramObject[2];
+
+    //                 if(splitKey.length==1){
+
+    //                     if(param.getType().isArray() || param.getClass().isArray()){
+    //                         formValues[indice] = Typing.arrayCast(values,param.getType(), name) ; 
+    //                     }
+    //                     else{
+    //                         formValues[indice] = Typing.convert(values[0],param.getType(), name) ; 
+    //                     }
+    //                 }
+    //                 else {
+                       
+    //                     Typing.setObject(formValues[indice],values,splitKey[1]);
+                       
+    //                 }
+                    
+    //             }
+    //         }
+    //     }
+    //     catch(Exception err){
+    //         err.printStackTrace();
+    //         throw err ;
+    //     }
+    //     return formValues ;
+    // }
+
     public static Object[] matchValues(Method method,Map<String,String[]> data) throws Exception{
         
         Object[] formValues = null ;
@@ -39,7 +106,7 @@ public class UtilController {
                 Parameter[] parameters = method.getParameters();
                 // checkAnnotation(parameters);
                 formValues = new Object[parameters.length];
-                Typing.instance(parameters, formValues);                                           // Instancier les attributs de la methode
+                Typing.instance(parameters, formValues);                                       // Instancier les attributs de la methode
                 
                 for (Map.Entry<String, String[]> entry : data.entrySet()) {
 
@@ -48,15 +115,15 @@ public class UtilController {
                     String[] values = entry.getValue();
                     Object[] paramObject =getParameterForData(parameters,splitKey[0],Param.class);
 
-                    Parameter param = (Parameter)paramObject[0] ; int indice = (int)paramObject[1]; 
+                    Parameter param = (Parameter)paramObject[0] ; int indice = (int)paramObject[1]; String name = (String)paramObject[2];
 
                     if(splitKey.length==1){
 
                         if(param.getType().isArray() || param.getClass().isArray()){
-                            formValues[indice] = Typing.arrayCast(values,param.getType()) ; 
+                            formValues[indice] = Typing.arrayCast(values,param.getType(), name) ; 
                         }
                         else{
-                            formValues[indice] = Typing.convert(values[0],param.getType()) ; 
+                            formValues[indice] = Typing.convert(values[0],param.getType(), name) ; 
                         }
                     }
                     else {
@@ -74,7 +141,6 @@ public class UtilController {
         }
         return formValues ;
     }
-
     
 
     public static Object[] getParameterForData(Parameter[] parameters,String name,Class annotation) throws Exception{
@@ -85,7 +151,7 @@ public class UtilController {
                 nameParam = ((Param)parameters[i].getAnnotation(Param.class)).name();
             }
            if(nameParam.equalsIgnoreCase(name)){
-                return new Object[]{parameters[i],i};
+                return new Object[]{parameters[i],i, nameParam};
            }
             // else {
             //     throw new Exception("ETU 2589 : annotation n'est pas présente sur l'attribut "+(parameters[i]).getName());

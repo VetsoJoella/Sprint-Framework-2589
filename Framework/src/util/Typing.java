@@ -3,6 +3,7 @@ package util;
 
 import annotation.*;
 import mapping.Mapping;
+import mulitpart.MutliPart;
 import util.Util;
 
 import java.io.IOException;
@@ -40,7 +41,7 @@ public class Typing {
         }
     }
 
-    public static <T> T[] arrayCast(Object o,Class<T> clazz) throws Exception{
+    public static <T> T[] arrayCast(Object o,Class<T> clazz, String name) throws Exception{
 
         int length = ((Object[]) o).length;
         T[] array = allocate(((Object[])o).length, clazz) ; 
@@ -59,7 +60,7 @@ public class Typing {
         return array;
     }
 
-    public static <T> T convert(Object str, Class<T> clazz) throws Exception {
+    public static <T> T convert(Object str, Class<T> clazz, String name) throws Exception {
 
         if (clazz==String.class) {
             return (T)str;
@@ -68,7 +69,10 @@ public class Typing {
             Constructor<?> constructor = clazz.getConstructor(String.class);
             return (T)constructor.newInstance(str);
 
-        } else{
+        // }if(clazz.createNewInstance() instanceof MutliPart){
+        //     return new MutliPart();
+        } 
+        else{
             Method m = wrapper(clazz);
             return (T)m.invoke(null,str.toString());
         }
