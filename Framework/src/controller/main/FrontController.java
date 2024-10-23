@@ -30,10 +30,10 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.annotation.MultipartConfig ;
 import com.google.gson.Gson;
 
-
+@MultipartConfig 
 public class FrontController extends HttpServlet {
 
     HashMap<String, Mapping> hashMap ;
