@@ -69,7 +69,7 @@ public class UtilController {
                     String[] values = entry.getValue();
                     Object[] paramObject = getParameterForData(parameters,splitKey[0],Param.class);
 
-                    Parameter param = (Parameter)paramObject[0] ; int indice = (int)paramObject[1]; 
+                    Parameter param = (Parameter)paramObject[0] ; int indice = (int)paramObject[1]; String name = (String)paramObject[2];
 
                     if(splitKey.length==1){
 
@@ -103,7 +103,6 @@ public class UtilController {
         }
         return formValues ;
     }
-
     
 
     public static Object[] getParameterForData(Parameter[] parameters, String name, Class annotation) throws Exception{
@@ -114,27 +113,22 @@ public class UtilController {
                 nameParam = ((Param)parameters[i].getAnnotation(Param.class)).name();
             }
            if(nameParam.equalsIgnoreCase(name)){
-                return new Object[]{parameters[i],i};
            }
             // else {
             //     throw new Exception("ETU 2589 : annotation n'est pas présente sur l'attribut "+(parameters[i]).getName());
             // }
         }
         return null ;
-    
-    }
 
-    public static void checkAnnotation(Parameter[] parameters) throws Exception{
-
-        for(int i =0; i<parameters.length ; i++){
+        // for(int i =0; i<parameters.length ; i++){
            
-            if(parameters[i].isAnnotationPresent(Param.class)==false){
+        //     if(parameters[i].isAnnotationPresent(Param.class)==false){
           
             
-                throw new Exception("ETU 2589 : annotation n'est pas présente sur l'attribut "+(parameters[i]).getName());
-            }
+        //         throw new Exception("ETU 2589 : annotation n'est pas présente sur l'attribut "+(parameters[i]).getName());
+        //     }
             
-        }
+        // }
        
     
     }
