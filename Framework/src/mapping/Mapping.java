@@ -38,7 +38,7 @@ public class Mapping {
 
         while (iterator.hasNext()) {
             Verb v = iterator.next();
-            System.out.println("Verb est "+ v.getVerb()+" method est "+v.getMethod().getName());
+            // System.out.println("Verb est "+ v.getVerb()+" method est "+v.getMethod().getName());
             if(v.getVerb().equalsIgnoreCase(verb)){
                 return v ;
             }

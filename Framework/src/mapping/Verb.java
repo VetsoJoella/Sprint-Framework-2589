@@ -46,7 +46,6 @@ public class Verb {
     // Surcharge de la méthode equals
     @Override
     public boolean equals(Object obj) {
-        System.out.println("appel de equals");
         if(obj instanceof  Verb){
             if(getVerb().equalsIgnoreCase(((Verb)obj).getVerb())){
                 return true ; 
@@ -62,7 +61,6 @@ public class Verb {
     // Surcharge de la méthode hashCode
     @Override
     public int hashCode() {
-        System.out.println("appel de hash");
         return Objects.hash(method.getName(), verb);
     }
 

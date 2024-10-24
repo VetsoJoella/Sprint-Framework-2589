@@ -30,7 +30,7 @@ public class Util {
 
             if (isClassAnnotationPresent) {
                 filterList.add(pack);
-                System.out.println(pack);
+                // System.out.println(pack);
             }
         }
         if(filterList.size()==0){
