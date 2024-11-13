@@ -80,7 +80,7 @@ public class Typing {
         return array;
     }
 
-    public static <T> T convert(Object str, Class<T> clazz, String name) throws Exception {
+    public static <T> T convert(Object str, Class<T> clazz) throws Exception {
 
        if(clazz == MultiPart.class){
             Constructor<?> constructor = clazz.getConstructor(Part.class);

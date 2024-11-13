@@ -55,11 +55,8 @@ public class UtilController {
                 // checkAnnotation(parameters);
                 formValues = new Object[parameters.length];
                 Typing.instance(parameters, formValues);                                           // Instancier les attributs de la methode
-                Map<String, String[]> data = listOfName(request);
+                Map<String, String[]> data = listOfValueInRequest(request);
             
-
-
-
                 for (Map.Entry<String, String[]> entry : data.entrySet()) {
 
                     String key = entry.getKey();
@@ -67,29 +64,27 @@ public class UtilController {
 
                     String[] splitKey = key.split("\\.");
                     String[] values = entry.getValue();
-                    Object[] paramObject = getParameterForData(parameters,splitKey[0],Param.class);
-
-                    Parameter param = (Parameter)paramObject[0] ; int indice = (int)paramObject[1]; String name = (String)paramObject[2];
+                    CorrespondingNameParameter paramObject = getParameterForData(parameters, splitKey[0], Param.class);
 
                     if(splitKey.length==1){
 
                         System.out.println(request.getHeader("Content-Type").contains("multipart"));
                         
-                        if(param.getType().isArray() || param.getClass().isArray()){
-                            formValues[indice] = Typing.arrayCast(request, splitKey[0], param.getType(), (Object[])values) ; 
+                        if(paramObject.getParameter().getType().isArray() || paramObject.getParameter().getClass().isArray()){
+                            formValues[paramObject.getIndice()] = Typing.arrayCast(request, splitKey[0], paramObject.getParameter().getType(), (Object[])values) ; 
                         }
                         else{
-                            if(param.getType()==MultiPart.class && request.getPart(splitKey[0])!=null) { 
-                                formValues[indice] = Typing.convert(request.getPart(splitKey[0]),param.getType()) ; 
+                            if(paramObject.getParameter().getType()==MultiPart.class && request.getPart(splitKey[0])!=null) { 
+                                formValues[paramObject.getIndice()] = Typing.convert(request.getPart(splitKey[0]),paramObject.getParameter().getType()) ; 
                                 System.out.println("Parametre avec multipart class");
                             }
-                            else  formValues[indice] = Typing.convert(request.getParameter(splitKey[0]),param.getType()) ; 
-
+                            else formValues[paramObject.getIndice()] = Typing.convert(request.getParameter(splitKey[0]),paramObject.getParameter().getType()) ; 
+                            // Object str, Class<T> clazz, String name
                         }
                     }
                     else {
                        
-                        Typing.setObject(request, formValues[indice], splitKey[1], key);
+                        Typing.setObject(request, formValues[paramObject.getIndice()], splitKey[1], key);
                         System.out.println("Appel de la fonction convert dans setObject");
 
                     }
@@ -105,7 +100,7 @@ public class UtilController {
     }
     
 
-    public static Object[] getParameterForData(Parameter[] parameters, String name, Class annotation) throws Exception{
+    public static CorrespondingNameParameter getParameterForData(Parameter[] parameters, String name, Class annotation) throws Exception{
 
         for(int i =0; i<parameters.length ; i++){
             String nameParam = parameters[i].getName() ; 
@@ -113,6 +108,8 @@ public class UtilController {
                 nameParam = ((Param)parameters[i].getAnnotation(Param.class)).name();
             }
            if(nameParam.equalsIgnoreCase(name)){
+                return new CorrespondingNameParameter(parameters[i], name,i);
+
            }
             // else {
             //     throw new Exception("ETU 2589 : annotation n'est pas présente sur l'attribut "+(parameters[i]).getName());
@@ -132,7 +129,7 @@ public class UtilController {
        
     
     }
-    public static Map<String, String[]> listOfName(HttpServletRequest request) throws Exception{
+    public static Map<String, String[]> listOfValueInRequest(HttpServletRequest request) throws Exception{
 
         Map<String, String[]> temMap = request.getParameterMap();
 
@@ -142,12 +139,57 @@ public class UtilController {
             data.put(entry.getKey(), entry.getValue());
         }
 
-        for (Part part : request.getParts()) {
-            String name = part.getName();
-            String value = new String(part.getInputStream().readAllBytes());
-            data.put(name, new String[]{value});
+        if (request.getHeader("Content-Type").contains("multipart")) {
+            for (Part part : request.getParts()) {
+                String name = part.getName();
+                String value = new String(part.getInputStream().readAllBytes());
+                data.put(name, new String[]{value});
+            }
         }
+      
         return data;
     }
     
+}
+
+
+class CorrespondingNameParameter{
+
+    Parameter parameter ; 
+    String name ; 
+    int indice ; 
+
+
+    public CorrespondingNameParameter() {}
+
+    public CorrespondingNameParameter(Parameter param, String name, int indice) {
+        setParameter(param); setName(name); setIndice(indice);
+    }
+
+
+    public Parameter getParameter() {
+        return this.parameter;
+    }
+
+    public void setParameter(Parameter parameter) {
+        this.parameter = parameter;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getIndice() {
+        return this.indice;
+    }
+
+    public void setIndice(int indice) {
+        this.indice = indice;
+    }
+
+
 }
