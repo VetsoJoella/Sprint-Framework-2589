@@ -3,7 +3,7 @@ package util;
 
 import annotation.*;
 import mapping.Mapping;
-import mulitpart.MutliPart;
+import mulitpart.MultiPart;
 import util.Util;
 
 import java.io.IOException;
@@ -11,18 +11,21 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.io.File ;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Array;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part ; 
+
 
 public class Typing {
     
     public static void instance(Parameter[] parameters, Object[] formValues) throws Exception{
-        System.out.println(" initialization ...");
+        // System.out.println(" initialization ...");
 
         for (int i = 0 ; i<parameters.length ; i++) {
             
@@ -41,9 +44,26 @@ public class Typing {
         }
     }
 
-    public static <T> T[] arrayCast(Object o,Class<T> clazz, String name) throws Exception{
+    // public static <T> T[] arrayCast(Object o,Class<T> clazz) throws Exception{
+
+    //     int length = ((Object[]) o).length;
+    //     T[] array = allocate(((Object[])o).length, clazz) ; 
+    //     for (int i = 0; i < length; i++) {
+    //         Object element = ((Object[]) o)[i];
+    //         // Convert each element individually, assuming convert method exists
+    //         array[i] = (T) convert(element, clazz.getComponentType());
+    //     }
+    //     return array;
+      
+    // }
+
+    public static <T> T[] arrayCast(HttpServletRequest request, String nameReference, Class<T> clazz, Object o) throws Exception{
 
         int length = ((Object[]) o).length;
+        if(clazz == MultiPart.class){
+            o = request.getParts().stream().filter(p -> p.getName().equals(nameReference)).toArray(Part[]::new);
+            
+        }
         T[] array = allocate(((Object[])o).length, clazz) ; 
         for (int i = 0; i < length; i++) {
             Object element = ((Object[]) o)[i];
@@ -62,15 +82,19 @@ public class Typing {
 
     public static <T> T convert(Object str, Class<T> clazz, String name) throws Exception {
 
+       if(clazz == MultiPart.class){
+            Constructor<?> constructor = clazz.getConstructor(Part.class);
+            return (T)constructor.newInstance((Part)str);
+        }
+
         if (clazz==String.class) {
             return (T)str;
         }
         if (!clazz.isPrimitive()){
+            System.out.println("Classe n'est pas primivie "+clazz);
+
             Constructor<?> constructor = clazz.getConstructor(String.class);
             return (T)constructor.newInstance(str);
-
-        // }if(clazz.createNewInstance() instanceof MutliPart){
-        //     return new MutliPart();
         } 
         else{
             Method m = wrapper(clazz);
@@ -79,25 +103,31 @@ public class Typing {
        
     }
 
+
     public static <T> T initiateValue(Class<T> clazz){
 
-        System.out.println(clazz.getName());
+        // System.out.println(clazz.getName());
         return (T) Array.get(Array.newInstance(clazz, 1),0);
     }
 
     
-    public static void setObject(Object o,Object data, String methodName) throws Exception{
+    public static void setObject(HttpServletRequest request, Object o, String methodName, String nameReference) throws Exception{
 
         String methodNameCapitalize = Util.capitalize(methodName);
         Method m = getMethod(o,"set"+methodNameCapitalize);
 
         Parameter[] parameters = m.getParameters();
+        if(parameters==null && parameters.length==0) return ;
+
         if(parameters[0].getType().isArray() || parameters[0].getClass().isArray()){
-            m.invoke(o, arrayCast(data,parameters[0].getType()) );
+            // m.invoke(o, arrayCast(data,parameters[0].getType()) );
+            m.invoke(o, arrayCast(request, nameReference, parameters[0].getType(), o));
 
         }
         else {
-            m.invoke(o,convert(data,parameters[0].getType()));
+            if((parameters[0].getType()==MultiPart.class) && request.getHeader("Content-Type").contains("multipart")) m.invoke(o,convert(request.getPart(nameReference), parameters[0].getType()));
+
+            else m.invoke(o,convert(request.getParameter(nameReference), parameters[0].getType()));
         }
 
     }

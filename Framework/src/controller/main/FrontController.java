@@ -33,7 +33,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.annotation.MultipartConfig ;
 import com.google.gson.Gson;
 
-@MultipartConfig 
+@MultipartConfig
 public class FrontController extends HttpServlet {
 
     HashMap<String, Mapping> hashMap ;
@@ -66,8 +66,6 @@ public class FrontController extends HttpServlet {
                         if(!(mapping.getVerbs().add(new Verb(verb, method)))){
                             throw new ConflictMethodException("L'url "+key+ "avec le verb "+verb+" est dupliqué");
                         }
-                        System.out.println("Url "+key+" avec le verb "+verb+" added");
-
                     }
                 }
             }
@@ -141,13 +139,12 @@ public class FrontController extends HttpServlet {
             if(map!=null && map.get(req.getMethod())!=null){
                 try {
                     Verb verb = map.get(req.getMethod()) ;
-                    Map<String, String[]> formValue = getValueSend(req, res); 
                     Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
                     HttpSession httpSession = req.getSession();
                     Session session = null ;
-                    setSession(session, instanceOfClass, httpSession);
-                    Object responseMethod = UtilController.invoke(instanceOfClass, verb, formValue);
-                    updateSession(session,httpSession);
+                    session = setSession(instanceOfClass, httpSession);
+                    Object responseMethod = UtilController.invoke(instanceOfClass, verb, req);
+                    updateSession(session, httpSession);
 
                     if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(verb.getMethod(), RestApi.class)){
                         giveResponse(responseMethod, res);
@@ -174,10 +171,8 @@ public class FrontController extends HttpServlet {
     // mise à jour de la session
     void updateSession(Session session, HttpSession httpSession){
 
-        System.out.println("Updating session ");
-
         if(session!=null){
-            
+
             Enumeration<String> attributeNames = httpSession.getAttributeNames();
 
             while (attributeNames.hasMoreElements()) {
@@ -188,7 +183,6 @@ public class FrontController extends HttpServlet {
             Map<String,Object> sessionValues = session.getMap() ;
             for(String key : sessionValues.keySet()) {
                 httpSession.setAttribute(key, sessionValues.get(key)) ;
-                System.out.println("Cles est "+key+" value est "+sessionValues.get(key));
             }
         }
    }
@@ -197,23 +191,25 @@ public class FrontController extends HttpServlet {
    Session createSession(HttpSession httpSession){
 
         Session session = new Session();
-
+        System.out.println("Appel de create session ");
         Enumeration<String> attributeNames = httpSession.getAttributeNames();
         while (attributeNames.hasMoreElements()) {
             String attributeName = attributeNames.nextElement();
-            session.add(attributeName,httpSession.getAttribute(attributeName));
+            session.add(attributeName, httpSession.getAttribute(attributeName));
         }
         return session ;
 
    }
 
    // Modification de la session
-   void setSession(Session session, Object instanceOfClass,  HttpSession httpSession) throws Exception{
+   Session setSession(Object instanceOfClass,  HttpSession httpSession) throws Exception{
         Field sessionField = Reflect.fieldExist(instanceOfClass.getClass(),Session.class);
+        Session session = null ;
         if(sessionField != null ){               // Vérifier si la classe a un field Session pour l'injection de dépendance
             session = createSession(httpSession);
-            Reflect.setObject(instanceOfClass,sessionField.getName(),session);
+            Reflect.setObject(instanceOfClass, sessionField.getName(),session);
         }
+        return session ;
     }
 
     // Print de réponse en format json
