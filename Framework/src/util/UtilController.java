@@ -2,11 +2,16 @@
 package util;
 
 import annotation.*;
+import annotation.control.Required;
+
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import mapping.Verb;
 import mulitpart.MultiPart;
@@ -26,7 +31,7 @@ public class UtilController {
             response = method.invoke(instanceOfClass,data);
         }
         catch(Exception err){
-            err.printStackTrace();
+            // err.printStackTrace();
             throw err ;
         }
         return response ;
@@ -47,14 +52,14 @@ public class UtilController {
             if ((request.getParameterMap() == null || request.getParameterMap().isEmpty())) {                
                 return formValues ;
             }
-            if (request.getHeader("Content-Type").contains("multipart") && (request.getParts() == null || request.getParts().isEmpty())) return formValues ;
+            if (request.getHeader("Content-Type")!=null && request.getHeader("Content-Type").contains("multipart") && (request.getParts() == null || request.getParts().isEmpty())) return formValues ;
             
             else {
                 
-                
+                List<Object> objectToCheck = new ArrayList<>();
                 // checkAnnotation(parameters);
                 formValues = new Object[parameters.length];
-                Typing.instance(parameters, formValues);                                           // Instancier les attributs de la methode
+                Typing.instance(parameters, formValues, objectToCheck);                                           // Instancier les attributs de la methode
                 Map<String, String[]> data = listOfValueInRequest(request);
             
                 for (Map.Entry<String, String[]> entry : data.entrySet()) {
@@ -67,18 +72,16 @@ public class UtilController {
                     CorrespondingNameParameter paramObject = getParameterForData(parameters, splitKey[0], Param.class);
 
                     if(splitKey.length==1){
-
-                        System.out.println(request.getHeader("Content-Type").contains("multipart"));
                         
                         if(paramObject.getParameter().getType().isArray() || paramObject.getParameter().getClass().isArray()){
-                            formValues[paramObject.getIndice()] = Typing.arrayCast(request, splitKey[0], paramObject.getParameter().getType(), (Object[])values) ; 
+                            formValues[paramObject.getIndice()] = Typing.arrayCast(request, paramObject.getName(), paramObject.getParameter().getType(), (Object[])values) ; 
                         }
                         else{
                             if(paramObject.getParameter().getType()==MultiPart.class && request.getPart(splitKey[0])!=null) { 
-                                formValues[paramObject.getIndice()] = Typing.convert(request.getPart(splitKey[0]),paramObject.getParameter().getType()) ; 
+                                formValues[paramObject.getIndice()] = Typing.convert(request.getPart(paramObject.getName()),paramObject.getParameter().getType()) ; 
                                 System.out.println("Parametre avec multipart class");
                             }
-                            else formValues[paramObject.getIndice()] = Typing.convert(request.getParameter(splitKey[0]),paramObject.getParameter().getType()) ; 
+                            else formValues[paramObject.getIndice()] = Typing.convert(request.getParameter(paramObject.getName()),paramObject.getParameter().getType()) ; 
                             // Object str, Class<T> clazz, String name
                         }
                     }
@@ -90,6 +93,9 @@ public class UtilController {
                     }
                     
                 } 
+
+                verifyRequired(objectToCheck);
+
             }
         }
         catch(Exception err){
@@ -139,7 +145,7 @@ public class UtilController {
             data.put(entry.getKey(), entry.getValue());
         }
 
-        if (request.getHeader("Content-Type").contains("multipart")) {
+        if (request.getHeader("Content-Type")!=null &&  request.getHeader("Content-Type").contains("multipart")) {
             for (Part part : request.getParts()) {
                 String name = part.getName();
                 String value = new String(part.getInputStream().readAllBytes());
@@ -148,6 +154,30 @@ public class UtilController {
         }
       
         return data;
+    }
+
+    static void verifyRequired(List<Object> lists) throws Exception{
+
+        System.out.println("Appel de verifyRequired");
+        StringBuilder message = new StringBuilder();        
+        
+        for(Object o : lists) {
+            for(Field f : o.getClass().getDeclaredFields()){
+                Required requiredAnnotation = f.getDeclaredAnnotation(Required.class) ;
+                if(requiredAnnotation!=null) {
+                    f.setAccessible(true);
+                    System.out.println("Field nom est "+f.getName());
+
+                    Object fieldValue = f.get(o); // Obtenir la valeur du champ
+                    if (fieldValue == null || fieldValue.equals(requiredAnnotation.defaultValue())) {
+                        message.append(requiredAnnotation.message()).append(" ");
+                    }
+                }
+            }
+        }
+
+        if(message.length() > 0) throw new Exception(message.toString().trim());
+
     }
     
 }

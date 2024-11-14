@@ -90,6 +90,21 @@ public class Util {
         return false ;
     }
 
+    // Vérification si les annotations dans le tableau des annotation suivant sont présents 
+    public static boolean isAnnotationPresent(Field field, Class<? extends Annotation>[]annotations){
+        for(Class<? extends Annotation> annotation : annotations) {
+
+            if(isAnnotationPresent(field, annotation)){
+                return true ; 
+            } 
+
+        } return false  ; 
+        // if(field.isAnnotationPresent(annotation)){
+        //     return true ;
+        // }
+        // return false ;
+    }
+
 
     // Fonction de capitalisation 
     public static String capitalize(String string){
