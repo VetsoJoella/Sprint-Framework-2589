@@ -123,7 +123,7 @@ public class FrontController extends HttpServlet {
 
         if(getServletContext().getAttribute("buildError")!=null){
             System.err.println(getServletContext().getAttribute("buildError"));
-            statusCode500(res,(String)getServletContext().getAttribute("buildError"));
+            statusCode(res, 500, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Problème interne du serveur",(String)getServletContext().getAttribute("buildError"));
             // res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
         } else {
@@ -162,7 +162,7 @@ public class FrontController extends HttpServlet {
             }
             else{
                 // out.println("404 , method not found  ");
-                statusCode404(res);
+                statusCode(res, 404, HttpServletResponse.SC_NOT_FOUND, "Page Non Trouvée", "La ressource que vous cherchez n'existe pas.");
             }
         }
         
@@ -266,27 +266,16 @@ public class FrontController extends HttpServlet {
         out.println("</body></html>");
     }
 
-    void statusCode404( HttpServletResponse response) throws Exception{
+    void statusCode( HttpServletResponse response, int code, int httpServletResponse, String head, String message) throws Exception{
 
-        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        response.setStatus(httpServletResponse);
         response.setContentType("text/html"); 
         response.getWriter().println("<html>");
-        response.getWriter().println("<head><title>Page Non Trouvée</title></head>");
+        response.getWriter().println("<head><title>"+head+"</title></head>");
         response.getWriter().println("<body>");
-        response.getWriter().println("<h1>Erreur 404 : Page Non Trouvée</h1>");
-        response.getWriter().println("<p>La ressource que vous cherchez n'existe pas.</p>");
+        response.getWriter().println("<h1>Erreur "+code+" : Page Non Trouvée</h1>");
+        response.getWriter().println("<p>"+message+"</p>");
         response.getWriter().println("</body></html>");
     }
 
-    void statusCode500( HttpServletResponse response, String message) throws Exception{
-
-        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        response.setContentType("text/html"); 
-        response.getWriter().println("<html>");
-        response.getWriter().println("<head><title>Problème interne d serveu</title>></head>");
-        response.getWriter().println("<body>");
-        response.getWriter().println("<h1>Erreur 500 : Page Non Trouvée</h1>");
-        response.getWriter().println("<p> "+message+" </p>+");
-        response.getWriter().println("</body></html>");
-    }
 }

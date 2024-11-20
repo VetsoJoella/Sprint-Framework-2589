@@ -2,17 +2,22 @@
 package util;
 
 import annotation.*;
+import annotation.control.Max;
+import annotation.control.Min;
+import annotation.control.Required;
 import mapping.Mapping;
 import mulitpart.MultiPart;
 import util.Util;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.io.File ;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.lang.annotation.Annotation;
@@ -24,7 +29,7 @@ import jakarta.servlet.http.Part ;
 
 public class Typing {
     
-    public static void instance(Parameter[] parameters, Object[] formValues) throws Exception{
+    public static void instance(Parameter[] parameters, Object[] formValues, List<Object> objectToCheck) throws Exception{
         // System.out.println(" initialization ...");
 
         for (int i = 0 ; i<parameters.length ; i++) {
@@ -39,6 +44,7 @@ public class Typing {
             }
             else{
                 formValues[i] = parameters[i].getType().newInstance(); 
+                objectToCheck.add(formValues[i]);
             }
 
         }
@@ -59,11 +65,12 @@ public class Typing {
 
     public static <T> T[] arrayCast(HttpServletRequest request, String nameReference, Class<T> clazz, Object o) throws Exception{
 
-        int length = ((Object[]) o).length;
         if(clazz == MultiPart.class){
             o = request.getParts().stream().filter(p -> p.getName().equals(nameReference)).toArray(Part[]::new);
             
         }
+
+        int length = ((Object[]) o).length;
         T[] array = allocate(((Object[])o).length, clazz) ; 
         for (int i = 0; i < length; i++) {
             Object element = ((Object[]) o)[i];
@@ -115,7 +122,13 @@ public class Typing {
 
         String methodNameCapitalize = Util.capitalize(methodName);
         Method m = getMethod(o,"set"+methodNameCapitalize);
+        System.out.println("Methode name est "+methodNameCapitalize);
 
+        Field fieldRelatedToMethod = o.getClass().getDeclaredField(methodName);        
+        
+        if(fieldRelatedToMethod!=null) {
+            valueControl(fieldRelatedToMethod, request.getParameter(nameReference));
+        }
         Parameter[] parameters = m.getParameters();
         if(parameters==null && parameters.length==0) return ;
 
@@ -155,5 +168,37 @@ public class Typing {
         
     }  
 
+    static void valueControl(Field field, Object fieldValue) throws Exception {
+        StringBuilder message = new StringBuilder();
+    
+        // Required requiredAnnotation = field.getAnnotation(Required.class);
+        // if (requiredAnnotation != null) {
+        //     field.setAccessible(true);
+        //     if (fieldValue == null || fieldValue.equals(requiredAnnotation.defaultValue())) {
+        //         message.append(requiredAnnotation.message()).append(" ");
+        //     }
+        // }
+    
+        // Vérification de l'annotation @Min
+        Min minAnnotation = field.getAnnotation(Min.class);
+        if (minAnnotation != null) {
+            field.setAccessible(true);
+            if (Double.valueOf(fieldValue.toString()) < minAnnotation.defaultValue()) {
+                message.append(minAnnotation.message()).append(" ");
+            }
+        }
+    
+        // Vérification de l'annotation @Max
+        Max maxAnnotation = field.getAnnotation(Max.class);
+        if (maxAnnotation != null) {
+            if (Double.valueOf(fieldValue.toString()) > maxAnnotation.defaultValue()) {
+                message.append(maxAnnotation.message()).append(" ");
+            }
+        }
+    
+        if (message.length() > 0) {
+            throw new Exception(message.toString().trim());
+        }
+    }    
 
 }
