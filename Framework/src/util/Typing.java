@@ -5,6 +5,7 @@ import annotation.*;
 import annotation.control.Max;
 import annotation.control.Min;
 import annotation.control.Required;
+import exception.ModelException;
 import mapping.Mapping;
 import mulitpart.MultiPart;
 import util.Util;
@@ -168,17 +169,8 @@ public class Typing {
         
     }  
 
-    static void valueControl(Field field, Object fieldValue) throws Exception {
+    static void valueControl(Field field, Object fieldValue) throws ModelException {        // Control des valeurs lors des setObject
         StringBuilder message = new StringBuilder();
-    
-        // Required requiredAnnotation = field.getAnnotation(Required.class);
-        // if (requiredAnnotation != null) {
-        //     field.setAccessible(true);
-        //     if (fieldValue == null || fieldValue.equals(requiredAnnotation.defaultValue())) {
-        //         message.append(requiredAnnotation.message()).append(" ");
-        //     }
-        // }
-    
         // Vérification de l'annotation @Min
         Min minAnnotation = field.getAnnotation(Min.class);
         if (minAnnotation != null) {
@@ -197,7 +189,7 @@ public class Typing {
         }
     
         if (message.length() > 0) {
-            throw new Exception(message.toString().trim());
+            throw new ModelException(field.getName()+" : "+message.toString().trim());
         }
     }    
 

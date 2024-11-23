@@ -1,6 +1,7 @@
 package contoller.main ;
 
 import util.*;
+import view.ResponseView;
 import annotation.*;
 import mapping.Mapping ;
 import mapping.Verb;
@@ -8,6 +9,7 @@ import response.ModelView;
 import session.Session;
 import controller.reflect.Reflect;
 import exception.ConflictMethodException;
+import exception.ModelException;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -37,6 +39,7 @@ import com.google.gson.Gson;
 public class FrontController extends HttpServlet {
 
     HashMap<String, Mapping> hashMap ;
+    ResponseView responseView ; 
 
     void initParameter() throws Exception{
 
@@ -73,6 +76,7 @@ public class FrontController extends HttpServlet {
                 throw err ;
             }
         }
+        responseView = new ResponseView();
     }
 
 
@@ -96,7 +100,8 @@ public class FrontController extends HttpServlet {
             processRequest(req,res);
 
         } catch (Exception e) {
-            handleError(e, req, res);
+            responseView.statusCode(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur dans la méthode", e.getMessage());
+
         }
 		
 	}
@@ -107,7 +112,7 @@ public class FrontController extends HttpServlet {
             processRequest(req,res);
 
         } catch (Exception e) {
-            handleError(e, req, res);
+            responseView.statusCode(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur dans la méthode", e.getMessage());
         }
 		
 	}
@@ -122,15 +127,15 @@ public class FrontController extends HttpServlet {
     void processRequest(HttpServletRequest req, HttpServletResponse res)throws ServletException, IOException, Exception {
 
         if(getServletContext().getAttribute("buildError")!=null){
-            System.err.println(getServletContext().getAttribute("buildError"));
-            statusCode(res, 500, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Problème interne du serveur",(String)getServletContext().getAttribute("buildError"));
-            // res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            responseView.statusCode(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Problème interne du serveur",(String)getServletContext().getAttribute("buildError"));
+          
 
         } else {
 
             PrintWriter out = res.getWriter();
             String host = getInitParameter("host") ;
             String link = req.getRequestURL().toString();
+            System.out.println("Lien est "+link);
             String contextPath = req.getContextPath();
             link = link.substring(host.length()+contextPath.length()-1);
 
@@ -143,14 +148,21 @@ public class FrontController extends HttpServlet {
                     HttpSession httpSession = req.getSession();
                     Session session = null ;
                     session = setSession(instanceOfClass, httpSession);
-                    Object responseMethod = UtilController.invoke(instanceOfClass, verb, req);
+                    Object responseMethod = new UtilController().invoke(instanceOfClass, verb, req);
                     updateSession(session, httpSession);
 
                     if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(verb.getMethod(), RestApi.class)){
-                        giveResponse(responseMethod, res);
+                        responseView.giveResponse(responseMethod, res);
                     } else { 
-                        giveResponse(responseMethod, req, res);
+                        responseView.giveResponse(responseMethod, req, res);
                     }
+                } catch(ModelException mErr){
+                    try {
+                        String referer = req.getHeader("Referer");
+                        responseView.redirect(req, res, referer.substring(host.length()+contextPath.length()-1));
+
+                    } catch (Exception err) {throw err ;}
+                    // fullURL(req);
                 }
                 catch(Exception err){
                     RequestDispatcher rd = req.getRequestDispatcher("/views/error.jsp");
@@ -162,7 +174,7 @@ public class FrontController extends HttpServlet {
             }
             else{
                 // out.println("404 , method not found  ");
-                statusCode(res, 404, HttpServletResponse.SC_NOT_FOUND, "Page Non Trouvée", "La ressource que vous cherchez n'existe pas.");
+                responseView.statusCode(res, HttpServletResponse.SC_NOT_FOUND, "Page Non Trouvée", "La ressource que vous cherchez n'existe pas.");
             }
         }
         
@@ -212,70 +224,14 @@ public class FrontController extends HttpServlet {
         return session ;
     }
 
-    // Print de réponse en format json
-    void printJson(String json, HttpServletResponse response) throws Exception{
-        PrintWriter out = response.getWriter();
-        response.setContentType("application/json");
-        out.print(json);
-   }
-  
-    void giveResponse(Object responseMethod, HttpServletRequest req, HttpServletResponse res) throws Exception{
+    String fullURL(HttpServletRequest request) {
 
-        PrintWriter out = res.getWriter();
-        if(responseMethod instanceof String){
-            out.println("Réponse de la methode est "+responseMethod);
-
-        } else if(responseMethod instanceof ModelView){
-
-            RequestDispatcher rd = req.getRequestDispatcher(((ModelView)responseMethod).getUrl());
-            HashMap dataValues = ((ModelView)responseMethod).getData() ;
-            dataValues.forEach((key, value) -> req.setAttribute((String)key,dataValues.get(key)));
-            rd.forward(req, res);
-        } else{
-            out.println("Type de retour non appropriée");
+        String fullURL = request.getRequestURL().toString();
+        if (request.getQueryString() != null) {
+            fullURL += "?" + request.getQueryString();
         }
-   }
-
-   void giveResponse(Object responseMethod, HttpServletResponse res) throws Exception{
-        
-        Gson gson = new Gson();
-        String jsonResponse = gson.toJson(responseMethod) ; 
-        if(responseMethod instanceof ModelView){
-            jsonResponse = gson.toJson(((ModelView)responseMethod).getData()) ;
-        }
-        printJson(jsonResponse, res);
-   }
-
-   void handleError(Exception e, HttpServletRequest req, HttpServletResponse res)
-            throws IOException {
-        // Logique pour gérer les erreurs
-        res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // 500 Internal Server Error
-        res.setContentType("text/html");
-
-        // Générer une page d'erreur comme le fait Tomcat
-        PrintWriter out = res.getWriter();
-        out.println("<html><head><title>Erreur interne</title></head><body>");
-        out.println("<h1>Une erreur s'est produite</h1>");
-        out.println("<p>" + e.getMessage() + "</p>");
-
-        // Afficher la stack trace (comme le fait Tomcat)
-        out.println("<pre>");
-        e.printStackTrace(out);
-        out.println("</pre>");
-
-        out.println("</body></html>");
-    }
-
-    void statusCode( HttpServletResponse response, int code, int httpServletResponse, String head, String message) throws Exception{
-
-        response.setStatus(httpServletResponse);
-        response.setContentType("text/html"); 
-        response.getWriter().println("<html>");
-        response.getWriter().println("<head><title>"+head+"</title></head>");
-        response.getWriter().println("<body>");
-        response.getWriter().println("<h1>Erreur "+code+" : Page Non Trouvée</h1>");
-        response.getWriter().println("<p>"+message+"</p>");
-        response.getWriter().println("</body></html>");
+        System.out.println("Full URL : " + fullURL);
+        return fullURL ;
     }
 
 }

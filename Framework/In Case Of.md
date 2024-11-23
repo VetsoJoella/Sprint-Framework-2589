@@ -1,18 +1,21 @@
-   for (int i = 0 ; i<parameters.length ; i++) {
-                    
-                    String[] value = parameters[i].getName() ;
-                    String name = null ;
-                    if(parameters[i].isAnnotationPresent(Param.class)){
 
-                        name = ((Param)parameters[i].getAnnotation(Param.class)).name();
-                        value = data.get(name);
 
-                    }
-                    value = data.get(name);
-                    if(parameters[i].getType().isArray() || parameters[i].getClass().isArray()){
-                        formValues[i] = arrayCast(value,parameters[i].getType()) ; 
-                    }
-                    else{
-                        formValues[i] = convert(value[0],parameters[i].getType()) ; 
-                    }
-                }
+To do list : 
+
+=> Objectif : retourne les erreurs des formulaires dans la meme page
+
+- Regard sur le fonctionnement de spring avec les messages d'erreur
+
+
+FRAMEWORK :
+
+- traitement au niveau vérification des methodes :
+    . if erreur retourner vers la form initiale :
+        . en affichant les messages d'erreur à coté des inputs avec les valeurs envoyées
+    . sinon action de la méthode
+
+
+
+DEVELOPPEUR :
+
+- Test des formulaires en saisissant des erreurs dans la form
