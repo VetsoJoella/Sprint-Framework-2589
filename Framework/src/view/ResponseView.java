@@ -83,4 +83,12 @@ public class ResponseView {
         // System.out.println("Référence est "+referer);
         request.getRequestDispatcher(redirectURI).forward(request, response);
    }
+
+   public void redirect(HttpServletRequest request, HttpServletResponse response, String redirectURI, boolean isErrorPresent) throws Exception{
+
+    System.out.println("Url sans URI est "+redirectURI);
+    // String referer = request.getHeader("Referer");
+    // System.out.println("Référence est "+referer);
+    request.getRequestDispatcher(redirectURI).forward(request, response);
+}
 }

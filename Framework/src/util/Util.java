@@ -2,9 +2,12 @@ package util;
 
 import annotation.Get;
 import annotation.Post;
+import exception.AnnotationNotFound;
+
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Vector ;
 
@@ -105,6 +108,30 @@ public class Util {
         // return false ;
     }
 
+    
+
+    public static String getAnnotation(Method method, Class<? extends Annotation> annotationClass, String name) throws AnnotationNotFound {
+
+        if (!method.isAnnotationPresent(annotationClass)) {
+            throw new AnnotationNotFound("L'annotation " + annotationClass.getSimpleName() + " n'est pas présente sur la méthode: " + method.getName());
+        }
+
+        // Récupère l'instance de l'annotation
+        Annotation annotation = method.getAnnotation(annotationClass);
+
+        try {
+            // Utilise la réflexion pour invoquer la méthode portant le nom de l'attribut
+            Method attributeMethod = annotation.annotationType().getMethod(name);
+            Object value = attributeMethod.invoke(annotation);
+
+            // Retourne la valeur sous forme de chaîne
+            return value.toString();
+        } catch (NoSuchMethodException e) {
+            throw new AnnotationNotFound("L'attribut '" + name + "' n'existe pas dans l'annotation: " + annotationClass.getSimpleName());
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Erreur lors de l'accès à l'attribut de l'annotation", e);
+        }
+    }
 
     // Fonction de capitalisation 
     public static String capitalize(String string){

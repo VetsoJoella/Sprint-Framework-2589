@@ -3,6 +3,7 @@ package contoller.main ;
 import util.*;
 import view.ResponseView;
 import annotation.*;
+import annotation.model.ModelError;
 import mapping.Mapping ;
 import mapping.Verb;
 import response.ModelView;
@@ -10,6 +11,7 @@ import session.Session;
 import controller.reflect.Reflect;
 import exception.ConflictMethodException;
 import exception.ModelException;
+import controller.wrapper.RequestWrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -142,8 +144,8 @@ public class FrontController extends HttpServlet {
             Mapping map = hashMap.get(link);
 
             if(map!=null && map.get(req.getMethod())!=null){
+                Verb verb = map.get(req.getMethod()) ;
                 try {
-                    Verb verb = map.get(req.getMethod()) ;
                     Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
                     HttpSession httpSession = req.getSession();
                     Session session = null ;
@@ -158,8 +160,12 @@ public class FrontController extends HttpServlet {
                     }
                 } catch(ModelException mErr){
                     try {
-                        String referer = req.getHeader("Referer");
-                        responseView.redirect(req, res, referer.substring(host.length()+contextPath.length()-1));
+                        HttpServletRequest wrappedRequest = new RequestWrapper(req, "GET");
+                        String returnURL = Util.getAnnotation(verb.getMethod(),ModelError.class,"value");
+                       
+                        System.out.println("REFER EST "+returnURL);
+
+                        responseView.redirect(wrappedRequest, res,returnURL);
 
                     } catch (Exception err) {throw err ;}
                     // fullURL(req);
@@ -178,7 +184,12 @@ public class FrontController extends HttpServlet {
             }
         }
         
-    }    
+    }  
+    
+    private void addTempSession(HttpSession httpSession, HttpServletRequest request) {
+
+        
+    }
 
     // mise à jour de la session
     void updateSession(Session session, HttpSession httpSession){
