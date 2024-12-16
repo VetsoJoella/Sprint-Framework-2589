@@ -160,12 +160,18 @@ public class FrontController extends HttpServlet {
                     }
                 } catch(ModelException mErr){
                     try {
-                        HttpServletRequest wrappedRequest = new RequestWrapper(req, "GET");
                         String returnURL = Util.getAnnotation(verb.getMethod(),ModelError.class,"value");
-                       
                         System.out.println("REFER EST "+returnURL);
 
-                        responseView.redirect(wrappedRequest, res,returnURL);
+                        if(verb.getVerb().compareToIgnoreCase("POST")==0) responseView.redirect(req, res,returnURL);
+                        else {
+                            HttpServletRequest wrappedRequest = new RequestWrapper(req, "GET");
+                            responseView.redirect(wrappedRequest, res,returnURL);
+
+                        }
+                       
+                       
+
 
                     } catch (Exception err) {throw err ;}
                     // fullURL(req);
