@@ -14,7 +14,7 @@ for /R "%src%" %%f in (*.java) do (
 )
 
 rem Compilation des fichiers
-javac -d "%bin%" %bin%\*.java
+javac -cp ".;%lib%/*" -d "%bin%" %bin%\*.java
 
 rem Vérification de la compilation
 if %errorlevel% neq 0 ( 

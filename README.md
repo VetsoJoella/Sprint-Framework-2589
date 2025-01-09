@@ -1,7 +1,7 @@
 # Sprint-Framework-2589
 
 
-A project which target is to try to create a web framework like Spring
+A project which target is trying to create a web framework like Spring
 Based with servlet, annotation and xml configuration
 
 
