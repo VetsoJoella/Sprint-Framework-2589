@@ -170,8 +170,6 @@ public class FrontController extends HttpServlet {
 
                         }
                        
-                       
-
 
                     } catch (Exception err) {throw err ;}
                     // fullURL(req);
