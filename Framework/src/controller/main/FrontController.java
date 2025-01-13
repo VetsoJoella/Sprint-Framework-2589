@@ -12,6 +12,7 @@ import mapping.Verb;
 import response.ModelView;
 import session.Session;
 import controller.reflect.Reflect;
+import controller.security.RoleManager;
 import controller.session.SessionManager;
 import exception.ConflictMethodException;
 import exception.ModelException;
@@ -52,6 +53,7 @@ public class FrontController extends HttpServlet {
     HashMap<String, Mapping> hashMap ;
     ResponseView responseView ; 
     ConfigManager configManager ;
+    RoleManager roleManager ; 
 
     public ConfigManager getConfigManager() {
         return configManager;
@@ -67,6 +69,8 @@ public class FrontController extends HttpServlet {
 
         configManager = new ConfigManager(getServletContext());
         responseView = new ResponseView();
+        roleManager = new RoleManager(getConfigManager().getProperty(ConfigManager.AUTH_REF));
+
         ServletContext context = getServletContext();
         String param = this.getInitParameter("contollerPath") ;
         String path = context.getRealPath(param); 
@@ -170,10 +174,10 @@ public class FrontController extends HttpServlet {
                 Verb verb = map.get(req.getMethod()) ;
                 SessionManager sessionManager = new SessionManager(req.getSession());
                 Session session = null ;
-                verifyAccess(sessionManager, verb);
                 try {
                     Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
-                    
+                    roleManager.verifyAccess(sessionManager,instanceOfClass, verb);
+
                     session = sessionManager.setSession(instanceOfClass);
                     Object responseMethod = new UtilController().invoke(instanceOfClass, verb, req);
                     sessionManager.updateSession(session);
@@ -208,29 +212,6 @@ public class FrontController extends HttpServlet {
         }
     }  
 
-    private void verifyAccess(SessionManager sessionManager, Verb verb) throws Exception {
-
-        String authName = getConfigManager().getProperty(ConfigManager.AUTH_REF);
-        System.out.println("Valeur de référence "+authName);
-
-        if(verb.getMethod().isAnnotationPresent(Auth.class) || verb.getMethod().isAnnotationPresent(Role.class)) {
-            if(sessionManager.getHttpSession().getAttribute(authName)==null) throw new AuthenticationException("Utilisateur non authentifié");
-        }
-
-        if(verb.getMethod().isAnnotationPresent(Role.class)) {
-            
-            Class<?>[] classes = verb.getMethod().getDeclaredAnnotation(Role.class).value();
-            Object o = sessionManager.getHttpSession().getAttribute(authName) ; 
-            boolean isAuthen = false ;
-            for (Class<?> class1 : classes) {
-                if (class1.isInstance(o)) {
-                    isAuthen = true ;
-                    break ;
-                }
-            }
-            if(!isAuthen) throw new RoleException("Vous n'est pas autorisé à accéder à ces méthodes");
-        }
-
-    }
+    
 
 }
