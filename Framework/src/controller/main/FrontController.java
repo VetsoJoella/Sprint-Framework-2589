@@ -4,19 +4,28 @@ import util.*;
 import view.ResponseView;
 import annotation.*;
 import annotation.model.ModelError;
+import annotation.security.auth.Auth;
+import annotation.security.auth.role.Role;
+import config.ConfigManager;
 import mapping.Mapping ;
 import mapping.Verb;
 import response.ModelView;
 import session.Session;
 import controller.reflect.Reflect;
+import controller.session.SessionManager;
 import exception.ConflictMethodException;
 import exception.ModelException;
+import exception.security.auth.RoleException;
 import controller.wrapper.RequestWrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.ObjectInputFilter.Config;
 import java.io.File ;
 import java.util.Vector;
+
+import javax.naming.AuthenticationException;
+
 import java.util.HashMap;
 import java.util.Enumeration;
 import java.util.Map;
@@ -42,9 +51,22 @@ public class FrontController extends HttpServlet {
 
     HashMap<String, Mapping> hashMap ;
     ResponseView responseView ; 
+    ConfigManager configManager ;
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+
+    public void setConfigManager(ConfigManager configManager) {
+        this.configManager = configManager;
+    }
+
 
     void initParameter() throws Exception{
 
+        configManager = new ConfigManager(getServletContext());
+        responseView = new ResponseView();
         ServletContext context = getServletContext();
         String param = this.getInitParameter("contollerPath") ;
         String path = context.getRealPath(param); 
@@ -92,6 +114,7 @@ public class FrontController extends HttpServlet {
             
             getServletContext().setAttribute("buildError",err.getMessage());
             System.err.println("Erreur dans l'initialisation des controllers");
+            
         }
     
     }
@@ -137,32 +160,33 @@ public class FrontController extends HttpServlet {
             PrintWriter out = res.getWriter();
             String host = getInitParameter("host") ;
             String link = req.getRequestURL().toString();
-            System.out.println("Lien est "+link);
             String contextPath = req.getContextPath();
             link = link.substring(host.length()+contextPath.length()-1);
 
             Mapping map = hashMap.get(link);
 
             if(map!=null && map.get(req.getMethod())!=null){
+
                 Verb verb = map.get(req.getMethod()) ;
+                SessionManager sessionManager = new SessionManager(req.getSession());
+                Session session = null ;
+                verifyAccess(sessionManager, verb);
                 try {
                     Object instanceOfClass = Class.forName(map.getClassName()).newInstance();
-                    HttpSession httpSession = req.getSession();
-                    Session session = null ;
-                    session = setSession(instanceOfClass, httpSession);
+                    
+                    session = sessionManager.setSession(instanceOfClass);
                     Object responseMethod = new UtilController().invoke(instanceOfClass, verb, req);
-                    updateSession(session, httpSession);
+                    sessionManager.updateSession(session);
 
                     if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(verb.getMethod(), RestApi.class)){
                         responseView.giveResponse(responseMethod, res);
                     } else { 
                         responseView.giveResponse(responseMethod, req, res);
                     }
+
                 } catch(ModelException mErr){
                     try {
                         String returnURL = Util.getAnnotation(verb.getMethod(),ModelError.class,"value");
-                        System.out.println("REFER EST "+returnURL);
-
                         if(verb.getVerb().compareToIgnoreCase("POST")==0) responseView.redirect(req, res,returnURL);
                         else {
                             HttpServletRequest wrappedRequest = new RequestWrapper(req, "GET");
@@ -170,83 +194,43 @@ public class FrontController extends HttpServlet {
 
                         }
                        
-
                     } catch (Exception err) {throw err ;}
-                    // fullURL(req);
                 }
                 catch(Exception err){
                     RequestDispatcher rd = req.getRequestDispatcher("/views/error.jsp");
                     req.setAttribute("error",err.getMessage());
                     rd.forward(req, res);
                 }
-                // e.printStackTrace();
-                
             }
             else{
-                // out.println("404 , method not found  ");
                 responseView.statusCode(res, HttpServletResponse.SC_NOT_FOUND, "Page Non Trouvée", "La ressource que vous cherchez n'existe pas.");
             }
         }
-        
     }  
-    
-    private void addTempSession(HttpSession httpSession, HttpServletRequest request) {
 
-        
-    }
+    private void verifyAccess(SessionManager sessionManager, Verb verb) throws Exception {
 
-    // mise à jour de la session
-    void updateSession(Session session, HttpSession httpSession){
+        String authName = getConfigManager().getProperty(ConfigManager.AUTH_REF);
+        System.out.println("Valeur de référence "+authName);
 
-        if(session!=null){
+        if(verb.getMethod().isAnnotationPresent(Auth.class) || verb.getMethod().isAnnotationPresent(Role.class)) {
+            if(sessionManager.getHttpSession().getAttribute(authName)==null) throw new AuthenticationException("Utilisateur non authentifié");
+        }
 
-            Enumeration<String> attributeNames = httpSession.getAttributeNames();
-
-            while (attributeNames.hasMoreElements()) {
-                String attributeName = attributeNames.nextElement();
-                httpSession.removeAttribute(attributeName);
+        if(verb.getMethod().isAnnotationPresent(Role.class)) {
+            
+            Class<?>[] classes = verb.getMethod().getDeclaredAnnotation(Role.class).value();
+            Object o = sessionManager.getHttpSession().getAttribute(authName) ; 
+            boolean isAuthen = false ;
+            for (Class<?> class1 : classes) {
+                if (class1.isInstance(o)) {
+                    isAuthen = true ;
+                    break ;
+                }
             }
-
-            Map<String,Object> sessionValues = session.getMap() ;
-            for(String key : sessionValues.keySet()) {
-                httpSession.setAttribute(key, sessionValues.get(key)) ;
-            }
+            if(!isAuthen) throw new RoleException("Vous n'est pas autorisé à accéder à ces méthodes");
         }
-   }
 
-   // Création de la session en mettant la valeur du hhtpSession dans une classe session 
-   Session createSession(HttpSession httpSession){
-
-        Session session = new Session();
-        System.out.println("Appel de create session ");
-        Enumeration<String> attributeNames = httpSession.getAttributeNames();
-        while (attributeNames.hasMoreElements()) {
-            String attributeName = attributeNames.nextElement();
-            session.add(attributeName, httpSession.getAttribute(attributeName));
-        }
-        return session ;
-
-   }
-
-   // Modification de la session
-   Session setSession(Object instanceOfClass,  HttpSession httpSession) throws Exception{
-        Field sessionField = Reflect.fieldExist(instanceOfClass.getClass(),Session.class);
-        Session session = null ;
-        if(sessionField != null ){               // Vérifier si la classe a un field Session pour l'injection de dépendance
-            session = createSession(httpSession);
-            Reflect.setObject(instanceOfClass, sessionField.getName(),session);
-        }
-        return session ;
-    }
-
-    String fullURL(HttpServletRequest request) {
-
-        String fullURL = request.getRequestURL().toString();
-        if (request.getQueryString() != null) {
-            fullURL += "?" + request.getQueryString();
-        }
-        System.out.println("Full URL : " + fullURL);
-        return fullURL ;
     }
 
 }
