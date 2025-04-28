@@ -1,0 +1,8 @@
+Nouvelle fonctionalité : 
+
+    ☐ Création de Object : 
+        args : extension, data, header, name, byte[], csv  
+        functions : setByte(), convertToByte(), convertToCSV(), setCsv()
+
+    ☐ 
+

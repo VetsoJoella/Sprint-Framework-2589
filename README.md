@@ -1,17 +1,9 @@
 # Sprint-Framework-2589
 
 
-The target of this project is to understand the mechanism of spring boot and to implement some common features.
-Such as : 
-  - redirection
-  - dependances injection
-  - method ans class security
-  - file upload
-  - Annotation
-  - ...
-
-## Requirements : 
-You should at least have JDK 17  
+A project which target is trying to create a web framework like Spring
+Based with servlet, annotation and xml configuration
 
 
-__Thank you all__
+-- Subject : Web Dynamic
+-- Teacher : Mr Naina
