@@ -13,6 +13,10 @@ public class DownloadObjectCSV extends DownloadObject{
         super() ;
     }
 
+    public DownloadObjectCSV(String extension, Object data, String name) {
+        super(extension, data, name) ;
+     }
+
     public void convert(){
         setContentType("text/csv");
         if (getData() == null) {

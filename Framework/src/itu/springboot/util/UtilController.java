@@ -20,7 +20,7 @@ import jakarta.servlet.http.Part ;
 public class UtilController {
     
     
-    public Object invoke(Object instanceOfClass, Verb verb, HttpServletRequest request, Object[] dependances) throws Exception{
+    public Object invoke(Object instanceOfClass, Verb verb, HttpServletRequest request, List<Object> dependances) throws Exception{
 
         Object response = null ;
         try {
@@ -38,7 +38,7 @@ public class UtilController {
 
  
     // public static Object[] matchValues(Method method,Map<String,String[]> data) throws Exception{
-    public Object[] matchValues(Method method, HttpServletRequest request, Object[] dependances) throws Exception{
+    public Object[] matchValues(Method method, HttpServletRequest request, List<Object> dependances) throws Exception{
         
         Object[] formValues = null ;
         Parameter[] parameters = method.getParameters();
@@ -79,7 +79,7 @@ public class UtilController {
         return formValues ;
     }
     
-    void matchValues(List<Object> objectToCheck, Parameter[]parameters, Object[] formValues, HttpServletRequest request, Object[] dependances) throws Exception {
+    void matchValues(List<Object> objectToCheck, Parameter[]parameters, Object[] formValues, HttpServletRequest request, List<Object> dependances) throws Exception {
 
         Typing.instance(parameters, formValues, objectToCheck, dependances);                        // Instancier les attributs de la methode
         Map<String, String[]> data = listOfValueInRequest(request);

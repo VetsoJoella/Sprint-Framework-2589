@@ -48,7 +48,10 @@ public class ResponseView {
             }
 
             rd.forward(req, res);
-        } else{
+        } else if(responseMethod == null) {
+            out.println("Réponse null");
+        }
+        else{
             out.println("Type de retour non appropriée");
         }
    }

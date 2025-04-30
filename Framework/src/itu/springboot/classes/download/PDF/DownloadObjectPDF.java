@@ -29,6 +29,10 @@ public class DownloadObjectPDF extends DownloadObject {
         super();
     }
 
+    public DownloadObjectPDF(String extension, Object data, String name) {
+       super(extension, data, name) ;
+    }
+
     public void convert(HttpServletRequest request, HttpServletResponse response) throws Exception{
 
         if(jspFile==null) return ;

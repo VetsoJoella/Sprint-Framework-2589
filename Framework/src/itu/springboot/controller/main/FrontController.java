@@ -218,7 +218,8 @@ public class FrontController extends HttpServlet {
 
                 // RedirectAttributes redirectAttributes =new RedirectAttributes();
                 session = sessionManager.setSession(instanceOfClass);
-                Object[] dependances = getDependance(session) ;
+                List<Object> dependances = getDependance(session) ;
+                dependances.add(req) ; dependances.add(res) ;
 
                 Object responseMethod = new UtilController().invoke(instanceOfClass, verb, req, dependances);
                 sessionManager.updateSession(session);
@@ -264,7 +265,7 @@ public class FrontController extends HttpServlet {
         }
     } 
 
-    void updateRedirectAttributes(Object[] dependances, HttpServletRequest req) {
+    void updateRedirectAttributes(List<Object> dependances, HttpServletRequest req) {
 
         for (Object object : dependances) {
             if(object instanceof RedirectAttributes) {
@@ -279,10 +280,15 @@ public class FrontController extends HttpServlet {
 
     }
 
-    Object[] getDependance(Session session){
-
-        return new Object[] { new RedirectAttributes(), ((UtilDb)getServletContext().getAttribute("utilDb")), session} ;
+    List<Object> getDependance(Session session) {
+        List<Object> dependances = new ArrayList<>();
+        dependances.add(new RedirectAttributes());
+        dependances.add((UtilDb) getServletContext().getAttribute("utilDb"));
+        dependances.add(session);
+        return dependances;
     }
+    
+    
 
     
 }

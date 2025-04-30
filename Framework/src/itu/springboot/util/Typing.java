@@ -21,11 +21,11 @@ import itu.springboot.util.date.DateUtil;
 
 public class Typing {
 
-    static int isADependance(Object[] dependances, Parameter parameter) {
+    static int isADependance(List<Object> dependances, Parameter parameter) {
 
-        for (int i = 0; i<dependances.length; i++) {
+        for (int i = 0; i<dependances.size(); i++) {
             // System.out.println("Type de parametre est "+parameter.getType().getName()+"  dependance est "+dependances[i].getClass().getName());
-            if (parameter.getType().isInstance(dependances[i])) {
+            if (parameter.getType().isInstance(dependances.get(i))) {
                 return i ;
             } 
         }
@@ -33,7 +33,7 @@ public class Typing {
     }
     
     @SuppressWarnings("deprecation")
-    public static void instance(Parameter[] parameters, Object[] formValues, List<Object> objectToCheck, Object[] dependances) throws Exception{
+    public static void instance(Parameter[] parameters, Object[] formValues, List<Object> objectToCheck, List<Object> dependances) throws Exception{
         // System.out.println(" initialization ...");
 
         for (int i = 0 ; i<parameters.length ; i++) {
@@ -49,7 +49,7 @@ public class Typing {
             } 
             else if(indice!=-1){
                 // System.out.println("Adresse de redirect coté framework MATCHVALUES "+dependances[indice]);
-                formValues[i] = dependances[indice] ;
+                formValues[i] = dependances.get(indice) ;
             }
             else{
                 try{
@@ -63,7 +63,7 @@ public class Typing {
         }
     }
 
-    public static Object[] createInstance(Parameter[] parameters, Object[] dependances) throws Exception{
+    public static Object[] createInstance(Parameter[] parameters, List<Object> dependances) throws Exception{
 
         System.out.println(" Instantiation des données ...");
         List<Object> objects = new ArrayList<>() ;
@@ -82,7 +82,7 @@ public class Typing {
             } 
             else if(indice!=-1){
                 // System.out.println("Adresse de redirect coté framework MATCHVALUES "+dependances[indice]);
-                formValues = dependances[indice] ;
+                formValues = dependances.get(indice) ;
             }
             // else{
             //     formValues = parameters[i].getType().newInstance(); 

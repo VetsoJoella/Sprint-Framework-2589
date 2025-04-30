@@ -28,6 +28,12 @@ public class DownloadObject {
         setBytes(bytes);
     }
 
+    public DownloadObject(String extension, Object data, String name) {
+        setExtension(extension);
+        setData(data);
+        setName(name);
+    }
+
     // Getters et Setters
     public String getExtension() {
         return extension;
@@ -84,6 +90,7 @@ public class DownloadObject {
     }
 
     public void convert(){
+        setContentType("application/octet-stream");
         convertToByte();
     }
 
