@@ -83,7 +83,9 @@ public class DownloadObject {
         }
     }
 
-    public void convert(){}
+    public void convert(){
+        convertToByte();
+    }
 
     // void convertToByte(Object object) {
     //     setHeader("application/octet-stream");
