@@ -6,24 +6,30 @@ import itu.springboot.view.ResponseView;
 import itu.springboot.view.response.RedirectAttributes;
 import itu.springboot.annotation.*;
 import itu.springboot.annotation.model.ModelError;
+import itu.springboot.classes.download.DownloadObject;
 import itu.springboot.classes.mapping.Mapping;
 import itu.springboot.classes.mapping.Verb;
 import itu.springboot.classes.session.Session;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
-
 import java.lang.reflect.Method;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.annotation.MultipartConfig ;
+
+import org.apache.log4j.Logger;
+
 import itu.springboot.services.connection.UtilDb;
 import itu.springboot.config.ConfigManager;
 import itu.springboot.controller.security.RoleManager;
@@ -31,10 +37,7 @@ import itu.springboot.controller.session.SessionManager;
 import itu.springboot.controller.wrapper.RequestWrapper;
 import itu.springboot.exception.ConflictMethodException;
 import itu.springboot.exception.ModelException;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.annotation.MultipartConfig ;
+
 
 @MultipartConfig
 public class FrontController extends HttpServlet {
@@ -143,11 +146,9 @@ public class FrontController extends HttpServlet {
 		
         try {
             processRequest(req,res);
-
         } catch (Exception e) {
             // ((Logger)getServletContext().getAttribute("log")).fatal(e.getMessage());
             responseView.statusCode(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur dans la méthode", e.getMessage());
-
         }
 	}
 
@@ -155,12 +156,10 @@ public class FrontController extends HttpServlet {
 		
         try {
             processRequest(req,res);
-
         } catch (Exception e) {
             // ((Logger)getServletContext().getAttribute("log")).fatal(e.getMessage());
             responseView.statusCode(res, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur dans la méthode", e.getMessage());
         }
-		
 	}
 
     // Get des valeurs dans envoyes dans les urls
@@ -227,7 +226,12 @@ public class FrontController extends HttpServlet {
 
                 if(Util.isAnnotationPresent(instanceOfClass, RestApi.class) || Util.isAnnotationPresent(verb.getMethod(), RestApi.class)){
                     responseView.giveResponse(responseMethod, res);
-                } else if(responseMethod instanceof String) {
+                } else if(responseMethod instanceof DownloadObject){
+                    DownloadObject dwn = ((DownloadObject)responseMethod) ; 
+                    dwn.download(res);
+
+                }
+                else if(responseMethod instanceof String) {
                     doRedirection(isARedirection(responseMethod.toString()), req, res);
                 } else { 
                     responseView.giveResponse(responseMethod, req, res);
