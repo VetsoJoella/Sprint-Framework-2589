@@ -1,7 +1,15 @@
 package itu.springboot.classes.download.PDF;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponseWrapper;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder ;
 
 import itu.springboot.classes.download.DownloadObject;
 
@@ -46,5 +54,22 @@ public class DownloadObjectPDF extends DownloadObject {
         // out.flush();
 
     }
+
+    public String renderJSPtoString(HttpServletRequest request, HttpServletResponse response, String jspPath) throws Exception {
+        
+        StringWriter stringWriter = new StringWriter();
+        HttpServletResponseWrapper responseWrapper = new HttpServletResponseWrapper(response) {
+            private final PrintWriter writer = new PrintWriter(stringWriter);
+            
+            @Override
+            public PrintWriter getWriter() {
+                return writer;
+            }
+        };
+
+        request.getRequestDispatcher(jspPath).include(request, responseWrapper);
+        return stringWriter.toString();
+    }
+
 
 }
